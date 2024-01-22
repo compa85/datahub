@@ -1,24 +1,12 @@
 {
   "attori": [
-    [
-      {
-        "Nome": "Giosue",
-        "Cognome": "Carducci"
-      },
-      {
-        "Nome": "Harrison",
-        "Cognome": "Ford"
-      }
-    ],
-    [
-      {
-        "Nome": "Robert",
-        "Cognome": "De Niro"
-      },
-      {
-        "Nome": "Davide",
-        "Cognome": "Compagnoni"
-      }
-    ]
+    {
+      "Nome": "Matteo",
+      "Cognome": "Gatti"
+    },
+    {
+      "Nome": "Davide",
+      "Cognome": "Compagnoni"
+    }
   ]
 }

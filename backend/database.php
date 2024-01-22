@@ -56,7 +56,7 @@ class Database {
 
     public function insert($object) {
         // messaggio di risposta
-        $message = "";
+        $message = 0;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $name => $table) {
@@ -95,14 +95,14 @@ class Database {
                 $this->conn->query($query);
                 // ottengo il numero di righe inserite
                 $inserted = $this->conn->affected_rows;
-                $message = "$inserted records inserted";
+                $message += $inserted;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
                 return $message;
             }
         }
 
-        return $message;
+        return "$message records inserted";
     }
 
 
@@ -110,7 +110,7 @@ class Database {
 
     public function delete($object) {
         // messaggio di risposta
-        $message = "";
+        $message = 0;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $name => $table) {
@@ -144,7 +144,7 @@ class Database {
                         $this->conn->query($query);
                         // ottengo il numero di righe cancellate
                         $deleted = $this->conn->affected_rows;
-                        $message = "$deleted records deleted";
+                        $message += $deleted;
                     } catch (Exception $e) {
                         $message = "Error: " . $e->getMessage();
                         return $message;
@@ -160,12 +160,12 @@ class Database {
                     $message = "All records of '$name' deleted";
                 } catch (Exception $e) {
                     $message = "Error: " . $e->getMessage();
-                    return $message;
                 }
+                return $message;
             }
         }
 
-        return $message;
+        return "$message records deleted";
     }
 
 
@@ -173,7 +173,7 @@ class Database {
 
     public function update($object) {
         // messaggio di risposta
-        $message = "";
+        $message = 0;
         
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $name => $table) {
@@ -227,7 +227,7 @@ class Database {
                         $this->conn->query($query);
                         // ottengo il numero di righe cancellate
                         $updated = $this->conn->affected_rows;
-                        $message = "$updated records updated";
+                        $message += $updated;
                     } catch (Exception $e) {
                         $message = "Error: " . $e->getMessage();
                         return $message;
@@ -236,6 +236,6 @@ class Database {
             }
         }
 
-        return $message;
+        return "$message records updated";
     }
 }
