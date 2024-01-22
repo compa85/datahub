@@ -1,0 +1,35 @@
+version: "3.1"
+
+services:
+    mariadb:
+        container_name: datahub-mariadb
+        image: mariadb:latest
+        restart: unless-stopped
+        ports:
+            - "3306:3306"
+        environment:
+            MARIADB_ROOT_PASSWORD: root
+
+    php:
+        container_name: datahub-php
+        build:
+            context: .
+            dockerfile: php.dockerfile
+        restart: unless-stopped
+        volumes:
+            - ../backend:/var/www/html
+        ports:
+            - "80:80"
+        depends_on:
+            - mariadb
+
+    phpmyadmin:
+        container_name: datahub-phpmyadmin
+        image: phpmyadmin:latest
+        restart: unless-stopped
+        ports:
+            - 8080:80
+        depends_on:
+            - mariadb
+        environment:
+            - PMA_HOST=mariadb
