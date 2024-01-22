@@ -1,24 +1,24 @@
 {
-    "attori": [
-        [
-            {
-                "Nome": "Harrison",
-                "Cognome": "Ford"
-            },
-            {
-                "Nome": "Antonio",
-                "Cognome": "Abatantuono"
-            }
-        ],
-        [
-            {
-                "Nome": "Brad",
-                "Cognome": "Pitt"
-            },
-            {
-                "Nome": "Giosuè",
-                "Cognome": "Carducci"
-            }
-        ]
+  "attori": [
+    [
+      {
+        "Nome": "Giosue",
+        "Cognome": "Carducci"
+      },
+      {
+        "Nome": "Harrison",
+        "Cognome": "Ford"
+      }
+    ],
+    [
+      {
+        "Nome": "Robert",
+        "Cognome": "De Niro"
+      },
+      {
+        "Nome": "Davide",
+        "Cognome": "Compagnoni"
+      }
     ]
+  ]
 }

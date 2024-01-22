@@ -126,7 +126,7 @@ class Database {
                     // scorro il vettore $fields che rappresenta la riga del db
                     foreach ($fields as $field => $value) {
                         // controllo che non ci siano spazi nei campi e nei valori
-                        if (str_contains($field, " ") || str_contains($value, " ")) {
+                        if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
@@ -191,7 +191,7 @@ class Database {
                     // scorro il vettore $new che rappresenta la riga del db
                     foreach ($new as $field => $value) {
                         // controllo che non ci siano spazi nei campi e nei valori
-                        if (str_contains($field, " ") || str_contains($value, " ")) {
+                        if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
@@ -209,7 +209,7 @@ class Database {
                     // scorro il vettore $old che rappresenta la riga del db
                     foreach ($old as $field => $value) {
                         // controllo che non ci siano spazi nei campi e nei valori
-                        if (str_contains($field, " ") || str_contains($value, " ")) {
+                        if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
