@@ -1,8 +1,24 @@
 {
     "attori": [
-        {
-            "Nome": "Mario",
-            "Cognome": "Rossi"
-        }
+        [
+            {
+                "Nome": "Harrison",
+                "Cognome": "Ford"
+            },
+            {
+                "Nome": "Antonio",
+                "Cognome": "Abatantuono"
+            }
+        ],
+        [
+            {
+                "Nome": "Brad",
+                "Cognome": "Pitt"
+            },
+            {
+                "Nome": "Giosuè",
+                "Cognome": "Carducci"
+            }
+        ]
     ]
 }

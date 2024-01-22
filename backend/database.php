@@ -123,7 +123,7 @@ class Database {
                     $fields = get_object_vars($record);
                     $conditions = array();
 
-                    // scorro il vettore $table che rappresenta la tabella del db
+                    // scorro il vettore $fields che rappresenta la riga del db
                     foreach ($fields as $field => $value) {
                         // controllo che non ci siano spazi nei campi e nei valori
                         if (str_contains($field, " ") || str_contains($value, " ")) {
@@ -161,6 +161,77 @@ class Database {
                 } catch (Exception $e) {
                     $message = "Error: " . $e->getMessage();
                     return $message;
+                }
+            }
+        }
+
+        return $message;
+    }
+
+
+    // ======================================= AGGIORNAMENTO =======================================
+
+    public function update($object) {
+        // messaggio di risposta
+        $message = "";
+        
+        // scorro l'oggetto $object che contiente le tabelle del db
+        foreach ($object as $name => $table) {
+            // scorro il vettore $table che rappresenta la tabella del db
+            foreach ($table as $record) {
+                $query = "UPDATE $name SET ";
+                
+                // se contiene due oggetti e quindi solo il soggetto e la modifica
+                if (count($record)==2) {
+                    // assegno a $old e $new array associativi che contengono i nomi e i valori dei campi vecchi e nuovi
+                    $old = get_object_vars($record[0]);
+                    $new = get_object_vars($record[1]);
+                    $conditions = array();
+
+                    // scorro il vettore $new che rappresenta la riga del db
+                    foreach ($new as $field => $value) {
+                        // controllo che non ci siano spazi nei campi e nei valori
+                        if (str_contains($field, " ") || str_contains($value, " ")) {
+                            $message = "Error: '$field: $value' contains a space character";
+                            return $message;
+                        }
+
+                        // aggiungo la stringa delle condizioni di aggiornamento nell'array $conditions
+                        $string = "$field = '$value'";
+                        array_push($conditions, $string);
+                    }
+
+                    // accodo alla query le stringhe dei dati da aggiornare e ricreo array condizioni per cancellare dati inseriti precedentemente
+                    $query .= implode(", ", $conditions);
+                    $query .= " WHERE ";
+                    $conditions = array();
+
+                    // scorro il vettore $old che rappresenta la riga del db
+                    foreach ($old as $field => $value) {
+                        // controllo che non ci siano spazi nei campi e nei valori
+                        if (str_contains($field, " ") || str_contains($value, " ")) {
+                            $message = "Error: '$field: $value' contains a space character";
+                            return $message;
+                        }
+
+                        // aggiungo la stringa delle condizioni nell'array $conditions
+                        $string = "$field = '$value'";
+                        array_push($conditions, $string);
+                    }
+
+                    // accodo alla query le stringhe delle condizioni
+                    $query .= implode(" AND ", $conditions);
+                    
+                    // eseguo la query
+                    try {
+                        $this->conn->query($query);
+                        // ottengo il numero di righe cancellate
+                        $updated = $this->conn->affected_rows;
+                        $message = "$updated records updated";
+                    } catch (Exception $e) {
+                        $message = "Error: " . $e->getMessage();
+                        return $message;
+                    }
                 }
             }
         }
