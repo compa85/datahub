@@ -138,24 +138,23 @@ class Database {
     // ========================================= RIMOZIONE =========================================
 
     public function delete($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
         // messaggio di risposta
-        $message = 0;
+        $message = "";
 
         // scorro l'oggetto $object che contiente le tabelle del db
-        foreach ($object as $name => $table) {
+        foreach ($object as $table_name => $table) {
             // controllo che la tabella non sia vuota
             if (!empty($table)) {
                 // scorro il vettore $table che rappresenta la tabella del db
                 foreach ($table as $record) {
-                    $query = "DELETE FROM $name WHERE ";
-
-                    // assegno a $fields un array associativo che contiene i nomi e i valori dei campi
-                    $fields = get_object_vars($record);
+                    $query = "DELETE FROM $table_name WHERE ";
                     $conditions = array();
 
-                    // scorro il vettore $fields che rappresenta la riga del db
-                    foreach ($fields as $field => $value) {
-                        // controllo che non ci siano spazi nei campi
+                    // scorro il vettore $record che rappresenta la riga del db
+                    foreach ($record as $field => $value) {
+                        // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
@@ -166,36 +165,34 @@ class Database {
                         array_push($conditions, $string);
                     }
 
-                    // accodo alla query le stringhe delle condizioni
+                    // accodo alla query le stringhe delle condizioni, separandole con AND
                     $query .= implode(" AND ", $conditions);
-
-                    // eseguo la query
-                    try {
-                        $this->conn->query($query);
-                        // ottengo il numero di righe cancellate
-                        $deleted = $this->conn->affected_rows;
-                        $message += $deleted;
-                    } catch (Exception $e) {
-                        $message = "Error: " . $e->getMessage();
-                        return $message;
-                    }
+                    // aggiungo la query all'array $queries
+                    array_push($queries, $query);
                 }
             } else {
                 // elimino tutti i campi della tabella
-                $query = "DELETE FROM $name";
+                $query = "DELETE FROM $table_name";
+                array_push($queries, $query);
+            }
+        }
 
-                // eseguo la query
-                try {
-                    $this->conn->query($query);
-                    $message = "All records of '$name' deleted";
-                } catch (Exception $e) {
-                    $message = "Error: " . $e->getMessage();
-                }
+        // variabile per il conteggio dei record eliminati
+        $deleted = 0;
+
+        //eseguo tutte le query se non si sono verificati errori
+        foreach ($queries as $query) {
+            try {
+                $this->conn->query($query);
+                // ottengo il numero di righe cancellate
+                $deleted += $this->conn->affected_rows;
+            } catch (Exception $e) {
+                $message = "Error: " . $e->getMessage();
                 return $message;
             }
         }
 
-        return "$message records deleted";
+        return "$deleted records deleted";
     }
 
 
