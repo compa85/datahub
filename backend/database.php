@@ -29,7 +29,7 @@ Il seguente è un esempio del contenuto del file JSON:
     ]
 }
 
-"cusotmers" è il nome della tabella, mentre "name", "surname" e "email" sono i suoi campi.
+"customers" è il nome della tabella, mentre "name", "surname" e "email" sono i suoi campi.
 
 // =================================================================================================
 */
@@ -52,57 +52,86 @@ class Database {
 
 
     // ======================================== INSERIMENTO ========================================
-    // Assicurati che gli oggetti presenti all'interno dello stesso vettore abbiano gli stessi campi
 
     public function insert($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
         // messaggio di risposta
-        $message = 0;
+        $message = "";
 
         // scorro l'oggetto $object che contiente le tabelle del db
-        foreach ($object as $name => $table) {
-            $query = "INSERT INTO $name ";
-            $fields  = null;
-            $values = array();
+        foreach ($object as $table_name => $table) {
+            // controllo che la tabella non sia vuota
+            if (!empty($table)) {
+                $query = "INSERT INTO $table_name ";
+                $fields = null;
+                $values = array();
 
-            // scorro il vettore $table che rappresenta la tabella del db
-            foreach ($table as $record) {
+                // scorro il vettore $table che rappresenta la tabella del db
+                foreach ($table as $record) {
+                    // array che contiene i nomi dei campi
+                    $local_fields = array();
+                    // array che contiene i valori dei campi
+                    $local_values = array();
 
-                if ($fields == null) {
-                    // assegno a $fields un array che contiene i nomi dei campi
-                    $fields = array_keys(get_object_vars($record));
-                    // accodo alla query i nomi dei campi
-                    $query .= "(" . implode(", ", $fields) . ") VALUES ";
-                } else {
-                    // confronto gli array contenenti i nomi dei campi
-                    $diff = array_diff($fields, array_keys(get_object_vars($record)));
-                    // se i campi sono diversi genera un errore
-                    if (!empty($diff)) {
-                        $message = "Error: Different fields in the objects";
-                        return $message;
+                    // scorro il vettore $record che rappresenta la riga del db
+                    foreach ($record as $field => $value) {
+                        // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
+                        if (str_contains($field, " ")) {
+                            $message = "Error: '$field: $value' contains a space character";
+                            return $message;
+                        }
+
+                        // aggiungo i nomi e i valori dei campi nei rispettivi array
+                        array_push($local_fields, $field);
+                        array_push($local_values, $value);
                     }
+
+                    if ($fields == null) {
+                        $fields = $local_fields;
+                        // accodo alla query i nomi dei campi
+                        $query .= "(" . implode(", ", $local_fields) . ") VALUES ";
+                    } else {
+                        // confronto gli array contenenti i nomi dei campi
+                        $diff = array_diff($fields, $local_fields);
+                        // controllo se i campi sono diversi o se non sono lo stesso numero
+                        if (!empty($diff) || count($fields) != count($local_fields)) {
+                            $message = "Error: Different fields in '$table_name'";
+                            return $message;
+                        }
+                    }
+
+                    // aggiungo la stringa dei valori all'array $values
+                    $string = "('" . implode("', '", $local_values) . "')";
+                    array_push($values, $string);
                 }
 
-                // aggiungo la stringa dei valori nell'array $values
-                $string = "('" . implode("', '", array_values(get_object_vars($record))) . "')";
-                array_push($values, $string);
+                // accodo alla query le stringhe dei valori presenti in $values, separandoli con una virgola
+                $query .= implode(", ", $values);
+                // aggiungo la query all'array $queries
+                array_push($queries, $query);
+            } else {
+                $message = "Error: Table '$table_name' is empty";
+                return $message;
             }
+        }
 
-            // accodo alla query le stringhe dei valori presenti in $values
-            $query .= implode(", ", $values);
+        // variabile per il conteggio dei record inseriti
+        $inserted = 0;
 
-            // eseguo la query
+        //eseguo tutte le query se non si sono verificati errori
+        foreach ($queries as $query) {
             try {
                 $this->conn->query($query);
-                // ottengo il numero di righe inserite
-                $inserted = $this->conn->affected_rows;
-                $message += $inserted;
+                // incremento il numero di righe inserite
+                $inserted += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
                 return $message;
             }
         }
 
-        return "$message records inserted";
+        return "$inserted records inserted";
     }
 
 
@@ -114,6 +143,7 @@ class Database {
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $name => $table) {
+            // controllo che la tabella non sia vuota
             if (!empty($table)) {
                 // scorro il vettore $table che rappresenta la tabella del db
                 foreach ($table as $record) {
@@ -125,7 +155,7 @@ class Database {
 
                     // scorro il vettore $fields che rappresenta la riga del db
                     foreach ($fields as $field => $value) {
-                        // controllo che non ci siano spazi nei campi e nei valori
+                        // controllo che non ci siano spazi nei campi
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
@@ -174,15 +204,15 @@ class Database {
     public function update($object) {
         // messaggio di risposta
         $message = 0;
-        
+
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $name => $table) {
             // scorro il vettore $table che rappresenta la tabella del db
             foreach ($table as $record) {
                 $query = "UPDATE $name SET ";
-                
+
                 // se contiene due oggetti e quindi solo il soggetto e la modifica
-                if (count($record)==2) {
+                if (count($record) == 2) {
                     // assegno a $old e $new array associativi che contengono i nomi e i valori dei campi vecchi e nuovi
                     $old = get_object_vars($record[0]);
                     $new = get_object_vars($record[1]);
@@ -221,7 +251,7 @@ class Database {
 
                     // accodo alla query le stringhe delle condizioni
                     $query .= implode(" AND ", $conditions);
-                    
+
                     // eseguo la query
                     try {
                         $this->conn->query($query);
@@ -237,5 +267,68 @@ class Database {
         }
 
         return "$message records updated";
+    }
+
+
+    // ========================================= SELEZIONE =========================================
+
+    public function select($object) {
+        // messaggio di risposta
+        $message = 0;
+
+        // scorro l'oggetto $object che contiente le tabelle del db
+        foreach ($object as $name => $table) {
+            if (!empty($table)) {
+                // scorro il vettore $table che rappresenta la tabella del db
+                foreach ($table as $record) {
+                    $query = "SELECT * FROM $name WHERE ";
+
+                    // assegno a $fields un array associativo che contiene i nomi e i valori dei campi
+                    $fields = get_object_vars($record);
+                    $conditions = array();
+
+                    // scorro il vettore $fields che rappresenta la riga del db
+                    foreach ($fields as $field => $value) {
+                        // controllo che non ci siano spazi nei campi e nei valori
+                        if (str_contains($field, " ")) {
+                            $message = "Error: '$field: $value' contains a space character";
+                            return $message;
+                        }
+
+                        // aggiungo la stringa delle condizioni nell'array $conditions
+                        $string = "$field = '$value'";
+                        array_push($conditions, $string);
+                    }
+
+                    // accodo alla query le stringhe delle condizioni
+                    $query .= implode(" AND ", $conditions);
+
+                    // eseguo la query
+                    try {
+                        $this->conn->query($query);
+                        // ottengo il numero di righe cancellate
+                        $deleted = $this->conn->affected_rows;
+                        $message += $deleted;
+                    } catch (Exception $e) {
+                        $message = "Error: " . $e->getMessage();
+                        return $message;
+                    }
+                }
+            } else {
+                // seelziono tutti i campi della tabella
+                $query = "SELECT * FROM $name";
+
+                // eseguo la query
+                try {
+                    $this->conn->query($query);
+                    $message = "All records of '$name' selected";
+                } catch (Exception $e) {
+                    $message = "Error: " . $e->getMessage();
+                }
+                return $message;
+            }
+        }
+
+        return "$message records selected";
     }
 }
