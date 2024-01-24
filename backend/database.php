@@ -119,7 +119,7 @@ class Database {
         // variabile per il conteggio dei record inseriti
         $inserted = 0;
 
-        //eseguo tutte le query se non si sono verificati errori
+        // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
             try {
                 $this->conn->query($query);
@@ -165,7 +165,7 @@ class Database {
                         array_push($conditions, $string);
                     }
 
-                    // accodo alla query le stringhe delle condizioni, separandole con AND
+                    // accodo alla query le condizioni, separandole con AND
                     $query .= implode(" AND ", $conditions);
                     // aggiungo la query all'array $queries
                     array_push($queries, $query);
@@ -180,7 +180,7 @@ class Database {
         // variabile per il conteggio dei record eliminati
         $deleted = 0;
 
-        //eseguo tutte le query se non si sono verificati errori
+        // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
             try {
                 $this->conn->query($query);
@@ -199,31 +199,33 @@ class Database {
     // ======================================= AGGIORNAMENTO =======================================
 
     public function update($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
         // messaggio di risposta
-        $message = 0;
+        $message = "";
 
         // scorro l'oggetto $object che contiente le tabelle del db
-        foreach ($object as $name => $table) {
+        foreach ($object as $table_name => $table) {
             // scorro il vettore $table che rappresenta la tabella del db
             foreach ($table as $record) {
-                $query = "UPDATE $name SET ";
+                $query = "UPDATE $table_name SET ";
 
-                // se contiene due oggetti e quindi solo il soggetto e la modifica
+                // controllo che $record contenga solo due oggetti: il primo il record da modificare e il secondo le modifiche
                 if (count($record) == 2) {
                     // assegno a $old e $new array associativi che contengono i nomi e i valori dei campi vecchi e nuovi
                     $old = get_object_vars($record[0]);
                     $new = get_object_vars($record[1]);
                     $conditions = array();
 
-                    // scorro il vettore $new che rappresenta la riga del db
+                    // scorro il vettore $new
                     foreach ($new as $field => $value) {
-                        // controllo che non ci siano spazi nei campi e nei valori
+                        // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
 
-                        // aggiungo la stringa delle condizioni di aggiornamento nell'array $conditions
+                        // aggiungo la stringa delle condizioni all'array $conditions
                         $string = "$field = '$value'";
                         array_push($conditions, $string);
                     }
@@ -233,37 +235,47 @@ class Database {
                     $query .= " WHERE ";
                     $conditions = array();
 
-                    // scorro il vettore $old che rappresenta la riga del db
+                    // scorro il vettore $old
                     foreach ($old as $field => $value) {
-                        // controllo che non ci siano spazi nei campi e nei valori
+                        // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
 
-                        // aggiungo la stringa delle condizioni nell'array $conditions
+                        // aggiungo la stringa delle condizioni all'array $conditions
                         $string = "$field = '$value'";
                         array_push($conditions, $string);
                     }
 
-                    // accodo alla query le stringhe delle condizioni
+                    // accodo alla query le condizioni, separandole con AND
                     $query .= implode(" AND ", $conditions);
-
-                    // eseguo la query
-                    try {
-                        $this->conn->query($query);
-                        // ottengo il numero di righe cancellate
-                        $updated = $this->conn->affected_rows;
-                        $message += $updated;
-                    } catch (Exception $e) {
-                        $message = "Error: " . $e->getMessage();
-                        return $message;
-                    }
+                    // aggiungo la query all'array $queries
+                    array_push($queries, $query);
+                } else {
+                    $message = "Error: Table '$table_name'";
+                    return $message;
                 }
             }
         }
 
-        return "$message records updated";
+        // variabile per il conteggio dei record aggiornati
+        $updated = 0;
+
+        // eseguo tutte le query se non si sono verificati errori
+        foreach ($queries as $query) {
+            echo $query . "<br>";
+            try {
+                $this->conn->query($query);
+                // ottengo il numero di righe aggiornate
+                $updated += $this->conn->affected_rows;
+            } catch (Exception $e) {
+                $message = "Error: " . $e->getMessage();
+                return $message;
+            }
+        }
+
+        return "$updated records updated";
     }
 
 
