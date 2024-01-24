@@ -34,6 +34,8 @@ Il seguente è un esempio del contenuto del file JSON:
 // =================================================================================================
 */
 
+
+// =========================================== DATABASE ============================================
 class Database {
     // ========================================= VARIABILI =========================================
 
@@ -56,8 +58,8 @@ class Database {
     public function insert($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // messaggio di risposta
-        $message = "";
+        // risposta
+        $message = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -79,7 +81,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return $message;
+                            return new Response($message);
                         }
 
                         // aggiungo i nomi e i valori dei campi nei rispettivi array
@@ -97,7 +99,7 @@ class Database {
                         // controllo se i campi sono diversi o se non sono lo stesso numero
                         if (!empty($diff) || count($fields) != count($local_fields)) {
                             $message = "Error: Different fields in '$table_name'";
-                            return $message;
+                            return new Response($message);
                         }
                     }
 
@@ -112,7 +114,7 @@ class Database {
                 array_push($queries, $query);
             } else {
                 $message = "Error: Table '$table_name' is empty";
-                return $message;
+                return new Response($message);
             }
         }
 
@@ -127,11 +129,14 @@ class Database {
                 $inserted += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return $message;
+                return new Response($message);
             }
         }
 
-        return "$inserted records inserted";
+        // creo l'oggetto per la risposta
+        $message = "$inserted records inserted";
+        $response = new Response($message, $queries);
+        return $response;
     }
 
 
@@ -140,8 +145,8 @@ class Database {
     public function delete($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // messaggio di risposta
-        $message = "";
+        // risposta
+        $message = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -157,7 +162,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return $message;
+                            return new Response($message);
                         }
 
                         // aggiungo la stringa delle condizioni nell'array $conditions
@@ -188,11 +193,14 @@ class Database {
                 $deleted += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return $message;
+                return new Response($message);
             }
         }
 
-        return "$deleted records deleted";
+        // creo l'oggetto per la risposta
+        $message = "$deleted records deleted";
+        $response = new Response($message, $queries);
+        return $response;
     }
 
 
@@ -201,8 +209,8 @@ class Database {
     public function update($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // messaggio di risposta
-        $message = "";
+        // risposta
+        $response = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -211,7 +219,7 @@ class Database {
                 $query = "UPDATE $table_name SET ";
 
                 // controllo che $record contenga solo due oggetti: il primo il record da modificare e il secondo le modifiche
-                if (count($record) == 2) {
+                if (gettype($record) == "array" && count($record) == 2) {
                     // assegno a $old e $new array associativi che contengono i nomi e i valori dei campi vecchi e nuovi
                     $old = get_object_vars($record[0]);
                     $new = get_object_vars($record[1]);
@@ -222,7 +230,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return $message;
+                            return new Response($message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -240,7 +248,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return $message;
+                            return new Response($message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -253,8 +261,8 @@ class Database {
                     // aggiungo la query all'array $queries
                     array_push($queries, $query);
                 } else {
-                    $message = "Error: Table '$table_name'";
-                    return $message;
+                    $message = "Error: Table '$table_name' doesn't contain arrays with 2 objects";
+                    return new Response($message);
                 }
             }
         }
@@ -270,11 +278,14 @@ class Database {
                 $updated += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return $message;
+                return new Response($message);
             }
         }
 
-        return "$updated records updated";
+        // creo l'oggetto per la risposta
+        $message = "$updated records updated";
+        $response = new Response($message, $queries);
+        return $response;
     }
 
 
@@ -283,8 +294,8 @@ class Database {
     public function select($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // messaggio di risposta
-        $message = "";
+        // risposta
+        $response = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -305,7 +316,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return $message;
+                            return new Response($message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -337,7 +348,6 @@ class Database {
 
         // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
-            echo $query . "<br>";
             try {
                 // salvo in result il risultato della query
                 $result = $this->conn->query($query);
@@ -349,12 +359,55 @@ class Database {
                     // aggiungo all'array $results il risultato della query come array associativo
                     array_push($results, $result->fetch_all(MYSQLI_ASSOC));
                 }
+
+                // creo l'oggetto per la risposta
+                $message = "$selected records selected";
+                $response = new Response($message, $queries, $results);
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return $message;
+                return new Response($message);
             }
         }
 
-        return "$selected records selected";
+        return $response;
+    }
+}
+
+
+// =========================================== RISPOSTA ============================================
+class Response {
+    // ========================================= VARIABILI =========================================
+
+    public $message;
+    public $query;
+    public $result;
+
+
+    // ======================================== COSTRUTTORI ========================================
+    public function __construct() {
+        $arguments = func_get_args();
+        $num_arguments = func_num_args();
+
+        if (method_exists($this, $function = '__construct' . $num_arguments)) {
+            call_user_func_array(array($this, $function), $arguments);
+        }
+    }
+
+    public function __construct1($message) {
+        $this->message = $message;
+        $this->query = null;
+        $this->result = null;
+    }
+
+    public function __construct2($message, $query) {
+        $this->message = $message;
+        $this->query = $query;
+        $this->result = null;
+    }
+
+    public function __construct3($message, $query, $result) {
+        $this->message = $message;
+        $this->query = $query;
+        $this->result = $result;
     }
 }
