@@ -264,7 +264,6 @@ class Database {
 
         // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
-            echo $query . "<br>";
             try {
                 $this->conn->query($query);
                 // ottengo il numero di righe aggiornate
@@ -282,62 +281,80 @@ class Database {
     // ========================================= SELEZIONE =========================================
 
     public function select($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
         // messaggio di risposta
-        $message = 0;
+        $message = "";
 
         // scorro l'oggetto $object che contiente le tabelle del db
-        foreach ($object as $name => $table) {
+        foreach ($object as $table_name => $table) {
+            // controllo che la tabella non sia vuota
             if (!empty($table)) {
+                $query = "SELECT * FROM $table_name WHERE ";
+                // array che contiene le condizioni separate da AND ($single_conditions)
+                $conditions = array();
+
                 // scorro il vettore $table che rappresenta la tabella del db
                 foreach ($table as $record) {
-                    $query = "SELECT * FROM $name WHERE ";
-
                     // assegno a $fields un array associativo che contiene i nomi e i valori dei campi
                     $fields = get_object_vars($record);
-                    $conditions = array();
+                    $single_conditions = array();
 
                     // scorro il vettore $fields che rappresenta la riga del db
                     foreach ($fields as $field => $value) {
-                        // controllo che non ci siano spazi nei campi e nei valori
+                        // controllo che non ci siano spazi nei campi
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
                             return $message;
                         }
 
-                        // aggiungo la stringa delle condizioni nell'array $conditions
+                        // aggiungo la stringa delle condizioni all'array $conditions
                         $string = "$field = '$value'";
-                        array_push($conditions, $string);
+                        array_push($single_conditions, $string);
                     }
 
-                    // accodo alla query le stringhe delle condizioni
-                    $query .= implode(" AND ", $conditions);
-
-                    // eseguo la query
-                    try {
-                        $this->conn->query($query);
-                        // ottengo il numero di righe cancellate
-                        $deleted = $this->conn->affected_rows;
-                        $message += $deleted;
-                    } catch (Exception $e) {
-                        $message = "Error: " . $e->getMessage();
-                        return $message;
-                    }
+                    // accodo alla query le condizioni
+                    $string = "(" . implode(" AND ", $single_conditions) . ")";
+                    array_push($conditions, $string);
                 }
+
+                // aggiungo la stringa delle condizioni separate da OR all'array $conditions
+                $query .= implode(" OR ", $conditions);
+                // aggiungo la query all'array $queries
+                array_push($queries, $query);
             } else {
-                // seelziono tutti i campi della tabella
-                $query = "SELECT * FROM $name";
+                // seleziono tutti i campi della tabella
+                $query = "SELECT * FROM $table_name";
+                // aggiungo la query all'array $queries
+                array_push($queries, $query);
+            }
+        }
 
-                // eseguo la query
-                try {
-                    $this->conn->query($query);
-                    $message = "All records of '$name' selected";
-                } catch (Exception $e) {
-                    $message = "Error: " . $e->getMessage();
+        // variabile per il conteggio delle righe restituite
+        $selected = 0;
+        // array che contiene i risultati delle query
+        $results = array();
+
+        // eseguo tutte le query se non si sono verificati errori
+        foreach ($queries as $query) {
+            echo $query . "<br>";
+            try {
+                // salvo in result il risultato della query
+                $result = $this->conn->query($query);
+                // ottengo il numero di righe restituite
+                $selected += $result->num_rows;
+
+                // controllo che il risutato abbia più di 0 righe
+                if ($selected > 0) {
+                    // aggiungo all'array $results il risultato della query come array associativo
+                    array_push($results, $result->fetch_all(MYSQLI_ASSOC));
                 }
+            } catch (Exception $e) {
+                $message = "Error: " . $e->getMessage();
                 return $message;
             }
         }
 
-        return "$message records selected";
+        return "$selected records selected";
     }
 }
