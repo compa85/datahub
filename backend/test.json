@@ -1,0 +1,14 @@
+{
+    "attori": [
+        {
+            "Nome": "Matteo",
+            "Cognome": "Gatti",
+            "Nazionalita": "Italiana"
+        },
+        {
+            "Nome": "Davide",
+            "Cognome": "Compagnoni",
+            "Nazionalita": "Italiana"
+        }
+    ]
+}
