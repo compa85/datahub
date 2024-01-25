@@ -15,8 +15,8 @@ $response = null;
 if (!empty($json)) {
     // convertire il json in un oggetto
     $data = json_decode($json);
-    // effettuare il delete
-    $response = $database->delete($data);
+    // effettuare l'update
+    $response = $database->update($data);
 } else {
     $response = new Response("JSON is empty");
 }

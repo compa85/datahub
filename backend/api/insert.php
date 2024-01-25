@@ -15,14 +15,10 @@ $response = null;
 if (!empty($json)) {
     // convertire il json in un oggetto
     $data = json_decode($json);
-    // inserire l'oggetto nel database
-    $response = array(
-        "message" => $database->insert($data),
-    );
+    // effettuare l'insert
+    $response = $database->insert($data);
 } else {
-    $response = array(
-        "message" => "JSON is empty",
-    );
+    $response = new Response("JSON is empty");
 }
 
 // inviare la risposta
