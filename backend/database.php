@@ -40,15 +40,16 @@ class Database {
     // ========================================= VARIABILI =========================================
 
     public $conn;
+    public $error;
 
 
     // ======================================== COSTRUTTORE ========================================
 
     public function __construct($host, $username, $password, $database) {
         try {
-            $this->conn = new mysqli($host, $username, $password, $database);
+            $this->conn = @new mysqli($host, $username, $password, $database);
         } catch (Exception $e) {
-            die("Connection failed: " . $e->getMessage());
+            $this->error = $e->getMessage();
         }
     }
 
