@@ -10,7 +10,7 @@ import {
 } from "@nextui-org/react";
 import { dbInsert } from "../database";
 
-function CustomModal({ isOpen, onOpenChange, addRecord }) {
+function CustomFormModal({ isOpen, onOpenChange, addRecord }) {
     // dati del form di inserimento
     const [formData, setFormData] = useState({
         Nome: "",
@@ -101,4 +101,4 @@ function CustomModal({ isOpen, onOpenChange, addRecord }) {
     );
 }
 
-export default CustomModal;
+export default CustomFormModal;

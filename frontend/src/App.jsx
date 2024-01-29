@@ -2,7 +2,7 @@ import React from "react";
 import { useReducer } from "react";
 import { useDisclosure } from "@nextui-org/react";
 import CustomTable from "./components/CustomTable";
-import CustomModal from "./components/CustomModal";
+import CustomFormModal from "./components/CustomFormModal";
 import Toast from "./components/Toast";
 
 function App() {
@@ -43,7 +43,7 @@ function App() {
     // stato del form (se aperto o chiuso)
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-    // =========================================== RETURN ==========================================
+    // return
     return (
         <>
             <CustomTable
@@ -53,11 +53,11 @@ function App() {
                 onOpen={onOpen}
             ></CustomTable>
 
-            <CustomModal
+            <CustomFormModal
                 isOpen={isOpen}
                 onOpenChange={onOpenChange}
                 addRecord={addRecord}
-            ></CustomModal>
+            ></CustomFormModal>
         </>
     );
 }

@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     Button,
+    Input,
     Table,
     TableHeader,
     TableBody,
@@ -10,7 +11,11 @@ import {
     getKeyValue,
 } from "@nextui-org/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faPenToSquare,
+    faTrash,
+    faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import { dbSelect, dbDelete } from "../database";
 
 function CustomTable({ data, addRecord, addRecords, deleteRecord, onOpen }) {
@@ -76,7 +81,12 @@ function CustomTable({ data, addRecord, addRecords, deleteRecord, onOpen }) {
                 isHeaderSticky
                 bottomContent={
                     <div className="flex w-full justify-center">
-                        <Button onPress={onOpen}>Aggiungi</Button>
+                        <Button
+                            onPress={onOpen}
+                            startContent={<FontAwesomeIcon icon={faPlus} />}
+                        >
+                            Aggiungi
+                        </Button>
                     </div>
                 }
                 classNames={{
@@ -126,7 +136,21 @@ function CustomTable({ data, addRecord, addRecords, deleteRecord, onOpen }) {
                                     </TableCell>
                                 ) : (
                                     <TableCell>
-                                        {getKeyValue(item, columnKey)}
+                                        <Input
+                                            isReadOnly
+                                            type="text"
+                                            size="sm"
+                                            value={
+                                                getKeyValue(item, columnKey) !=
+                                                null
+                                                    ? getKeyValue(
+                                                          item,
+                                                          columnKey,
+                                                      )
+                                                    : ""
+                                            }
+                                            variant="bordered"
+                                        />
                                     </TableCell>
                                 )
                             }
