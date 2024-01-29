@@ -121,13 +121,23 @@ class Database {
 
         // variabile per il conteggio dei record inseriti
         $inserted = 0;
+        // variabile per salvare gli id dei record inseriti
+        $id = array();
 
         // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
             try {
                 $this->conn->query($query);
+                // salvo il numero di righe inserite con la query
+                $affected_rows = $this->conn->affected_rows;
+                // salvo l'id del primo record della query
+                $start_id = $this->conn->insert_id;
                 // incremento il numero di righe inserite
-                $inserted += $this->conn->affected_rows;
+                $inserted += $affected_rows;
+                // salvo ogni id inserito partendo dal primo record della query
+                for ($i = $start_id; $i < $start_id + $affected_rows; $i++) {
+                    array_push($id, $i);
+                }
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
                 return new Response($message);
@@ -136,7 +146,7 @@ class Database {
 
         // creo l'oggetto per la risposta
         $message = "$inserted records inserted";
-        $response = new Response($message, $queries);
+        $response = new Response($message, $queries, $id);
         return $response;
     }
 
