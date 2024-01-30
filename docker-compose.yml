@@ -1,14 +1,22 @@
 version: "3.1"
 
+volumes:
+    modules:
+    db:
+
 services:
-    mariadb:
-        container_name: datahub-mariadb
-        image: mariadb:latest
+    react:
+        container_name: datahub-react
+        build:
+            context: .
+            dockerfile: ./frontend/react.dockerfile
         restart: unless-stopped
+        volumes:
+            - ./frontend:/app
+            - modules:/app/node_modules
         ports:
-            - "3306:3306"
-        environment:
-            MARIADB_ROOT_PASSWORD: root
+            - "3000:80"
+        command: bash -c "npm install & npm run dev"
 
     php:
         container_name: datahub-php
@@ -19,7 +27,7 @@ services:
         volumes:
             - ./backend:/var/www/html
         ports:
-            - "8080:80"
+            - "3001:80"
         depends_on:
             - mariadb
 
@@ -28,21 +36,23 @@ services:
         image: phpmyadmin:latest
         restart: unless-stopped
         ports:
-            - 8081:80
+            - 3002:80
         depends_on:
             - mariadb
         environment:
             - PMA_HOST=mariadb
+            - PMA_PORT=3003
 
-    react:
-        container_name: datahub-react
-        build:
-            context: .
-            dockerfile: ./frontend/react.dockerfile
+    mariadb:
+        container_name: datahub-mariadb
+        image: mariadb:latest
         restart: unless-stopped
         volumes:
-            - ./frontend:/app
-            - /app/node_modules
+            - db:/var/lib/mysql
+            # - ./db:/docker-entrypoint-initdb.d
         ports:
-            - "80:80"
-        command: bash -c "npm install & npm run dev"
+            - "3003:3003"
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_TCP_PORT=3003
+            - MYSQL_UNIX_PORT=3003

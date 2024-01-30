@@ -1,6 +1,10 @@
+// variabili
+const host = "localhost:3001";
+
+
 // select
 async function dbSelect(object) {
-    let response = await fetch("http://localhost:8080/api/select.php", {
+    let response = await fetch(`http://${host}/api/select.php`, {
         method: "POST",
         "Content-Type": "application/json",
         body: JSON.stringify(object),
@@ -11,7 +15,7 @@ async function dbSelect(object) {
 
 // insert
 async function dbInsert(object) {
-    let response = await fetch("http://localhost:8080/api/insert.php", {
+    let response = await fetch(`http://${host}/api/insert.php`, {
         method: "POST",
         "Content-Type": "application/json",
         body: JSON.stringify(object),
@@ -22,7 +26,7 @@ async function dbInsert(object) {
 
 // update
 async function dbUpdate(object) {
-    let response = await fetch("http://localhost:8080/api/update.php", {
+    let response = await fetch(`http://${host}/api/update.php`, {
         method: "POST",
         "Content-Type": "application/json",
         body: JSON.stringify(object),
@@ -33,7 +37,7 @@ async function dbUpdate(object) {
 
 // delete
 async function dbDelete(object) {
-    let response = await fetch("http://localhost:8080/api/delete.php", {
+    let response = await fetch(`http://${host}/api/delete.php`, {
         method: "POST",
         "Content-Type": "application/json",
         body: JSON.stringify(object),
