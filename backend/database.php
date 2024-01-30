@@ -45,9 +45,9 @@ class Database {
 
     // ======================================== COSTRUTTORE ========================================
 
-    public function __construct($host, $username, $password, $database) {
+    public function __construct($host, $username, $password, $database, $port) {
         try {
-            $this->conn = @new mysqli($host, $username, $password, $database);
+            $this->conn = @new mysqli($host, $username, $password, $database, $port);
         } catch (Exception $e) {
             $this->error = $e->getMessage();
         }

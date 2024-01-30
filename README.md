@@ -26,8 +26,9 @@ Per eseguire l'applicazione, segui i passaggi di seguito:
    ```bash
    docker compose up -d
    ```
-3. DataHub è ora in esecuzione su http://localhost:80
+
+3. DataHub è ora in esecuzione su http://localhost:3000
+
+   Se vuoi testare unicamente la parte di backend vai a http://localhost:3001
    
-   Per accedere a phpmyadmin vai a http://localhost:8081
-   
-   Se invece vuoi testare unicamente la parte di backend in php vai a http://localhost:8080
+   Per invece accedere a phpmyadmin vai a http://localhost:3002

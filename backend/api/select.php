@@ -1,4 +1,5 @@
 <?php
+include "./config.php";
 include "../database.php";
 
 // headers
@@ -7,7 +8,7 @@ header("Content-Type: application/json");
 header("Access-Control-Allow-Methods: POST");
 
 // attributi
-$database = new Database("mariadb", "root", "root", "cinema");
+$database = new Database(DBHOST, DBUSER, DBPWD, DBNAME, DBPORT);
 $json = file_get_contents('php://input');
 $response = null;
 

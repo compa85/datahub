@@ -74,7 +74,11 @@ function App() {
         const object = {
             attori: [],
         };
-        dbSelect(object).then((response) => setData(response.result[0]));
+        dbSelect(object).then((response) =>
+            response.result != null
+                ? setData(response.result[0])
+                : console.log(response),
+        );
     }, []);
 
     // ======================================== INSERIMENTO ========================================
