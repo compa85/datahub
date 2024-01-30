@@ -3,13 +3,12 @@ import { useReducer } from "react";
 import { useDisclosure } from "@nextui-org/react";
 import CustomTable from "./components/CustomTable";
 import CustomFormModal from "./components/CustomFormModal";
-import Toast from "./components/Toast";
 
 function App() {
-    // dati
+    // data
     const [data, dispatchData] = useReducer(dataReducer, []);
 
-    // reducer
+    // data reducer
     function dataReducer(state, action) {
         switch (action.type) {
             case "INSERT_RECORD":

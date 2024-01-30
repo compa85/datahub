@@ -27,7 +27,7 @@ function CustomFormModal({ isOpen, onOpenChange, addRecord }) {
 
     // inserimento
     function handleInsert() {
-        const object = {
+        let object = {
             attori: [
                 {
                     Nome: formData.Nome,
@@ -39,6 +39,15 @@ function CustomFormModal({ isOpen, onOpenChange, addRecord }) {
         };
         dbInsert(object).then((response) => {
             console.log(response);
+            object = {
+                ...object,
+                attori: [
+                    {
+                        ...object.attori[0],
+                        CodAttore: String(response.result[0]),
+                    },
+                ],
+            };
             addRecord(object.attori[0]);
             setFormData({
                 Nome: "",

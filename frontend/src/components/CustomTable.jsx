@@ -18,7 +18,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { dbSelect, dbDelete } from "../database";
 
-function CustomTable({ data, addRecord, addRecords, deleteRecord, onOpen }) {
+function CustomTable({ data, addRecords, deleteRecord, onOpen }) {
     // colonne della tabella
     const columns = [
         {
@@ -121,7 +121,7 @@ function CustomTable({ data, addRecord, addRecords, deleteRecord, onOpen }) {
                                                 isIconOnly
                                                 text-danger
                                                 className="bg-transparent"
-                                                onClick={() => {
+                                                onPress={() => {
                                                     handleDelete(
                                                         item.CodAttore,
                                                     );
