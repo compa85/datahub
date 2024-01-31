@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { addRecords, deleteRecord } from "../redux/dataSlice";
+import { dbSelect, dbDelete } from "../database";
 import {
     Button,
     Input,
@@ -16,9 +19,11 @@ import {
     faTrash,
     faPlus,
 } from "@fortawesome/free-solid-svg-icons";
-import { dbSelect, dbDelete } from "../database";
 
-function CustomTable({ data, addRecords, deleteRecord, onOpen }) {
+function CustomTable({ onOpen }) {
+    const data = useSelector((state) => state.data.values);
+    const dispatch = useDispatch();
+
     // colonne della tabella
     const columns = [
         {
@@ -53,7 +58,7 @@ function CustomTable({ data, addRecords, deleteRecord, onOpen }) {
             attori: [],
         };
         dbSelect(object).then((response) => {
-            addRecords(response.result[0]);
+            dispatch(addRecords(response.result[0]));
         });
     }, []);
 
@@ -62,18 +67,16 @@ function CustomTable({ data, addRecords, deleteRecord, onOpen }) {
         const object = {
             attori: [
                 {
-                    codAttore: id,
+                    CodAttore: id,
                 },
             ],
         };
-
         dbDelete(object).then((response) => {
             console.log(response);
-            deleteRecord(object.attori[0]);
+            dispatch(deleteRecord(id));
         });
     };
 
-    // return
     return (
         <>
             <Table

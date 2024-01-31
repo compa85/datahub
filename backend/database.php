@@ -160,7 +160,7 @@ class Database {
             }
         }
 
-        return new Response(false, "$deleted records deleted", $queries);
+        return new Response(true, "$deleted records deleted", $queries);
     }
 
 

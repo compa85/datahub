@@ -1,4 +1,7 @@
-import { useState, useReducer } from "react";
+import { useReducer } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { addRecord } from "../redux/dataSlice";
+import { dbInsert } from "../database";
 import {
     Button,
     Modal,
@@ -8,21 +11,39 @@ import {
     ModalFooter,
     Input,
 } from "@nextui-org/react";
-import { dbInsert } from "../database";
 
-function CustomFormModal({ isOpen, onOpenChange, addRecord }) {
-    // dati del form di inserimento
-    const [formData, setFormData] = useState({
+function CustomFormModal({ isOpen, onOpenChange }) {
+    const dispatch = useDispatch();
+
+    // form data
+    const [formData, dispatchFormState] = useReducer(formReducer, {
         Nome: "",
         Cognome: "",
         Nazionalita: "",
         AnnoNascita: "",
     });
 
+    // form reducer
+    function formReducer(state, action) {
+        switch (action.type) {
+            case "CHANGE_FIELD":
+                return { ...state, [action.field]: action.value };
+            case "RESET":
+                return {
+                    Nome: "",
+                    Cognome: "",
+                    Nazionalita: "",
+                    AnnoNascita: "",
+                };
+            default:
+                return state;
+        }
+    }
+
     // aggiornare il form
     function handleInputChange(e) {
         const { value, name } = e.target;
-        setFormData({ ...formData, [name]: value });
+        dispatchFormState({ type: "CHANGE_FIELD", field: name, value: value });
     }
 
     // inserimento
@@ -48,17 +69,11 @@ function CustomFormModal({ isOpen, onOpenChange, addRecord }) {
                     },
                 ],
             };
-            addRecord(object.attori[0]);
-            setFormData({
-                Nome: "",
-                Cognome: "",
-                Nazionalita: "",
-                AnnoNascita: "",
-            });
+            dispatch(addRecord(object.attori[0]));
+            dispatchFormState({ type: "RESET" });
         });
     }
 
-    // return
     return (
         <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
             <ModalContent>
