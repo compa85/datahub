@@ -82,7 +82,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
 
                         // aggiungo i nomi e i valori dei campi nei rispettivi array
@@ -100,7 +100,7 @@ class Database {
                         // controllo se i campi sono diversi o se non sono lo stesso numero
                         if (!empty($diff) || count($fields) != count($local_fields)) {
                             $message = "Error: Different fields in '$table_name'";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
                     }
 
@@ -115,7 +115,7 @@ class Database {
                 array_push($queries, $query);
             } else {
                 $message = "Error: Table '$table_name' is empty";
-                return new Response($message);
+                return new Response(false, $message);
             }
         }
 
@@ -140,13 +140,13 @@ class Database {
                 }
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $message);
             }
         }
 
         // creo l'oggetto per la risposta
         $message = "$inserted records inserted";
-        $response = new Response($message, $queries, $id);
+        $response = new Response(true, $message, $queries, $id);
         return $response;
     }
 
@@ -173,7 +173,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
 
                         // aggiungo la stringa delle condizioni nell'array $conditions
@@ -204,13 +204,13 @@ class Database {
                 $deleted += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $message);
             }
         }
 
         // creo l'oggetto per la risposta
         $message = "$deleted records deleted";
-        $response = new Response($message, $queries);
+        $response = new Response(false, $message, $queries);
         return $response;
     }
 
@@ -241,7 +241,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -259,7 +259,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -273,7 +273,7 @@ class Database {
                     array_push($queries, $query);
                 } else {
                     $message = "Error: Table '$table_name' doesn't contain arrays with 2 objects";
-                    return new Response($message);
+                    return new Response(false, $message);
                 }
             }
         }
@@ -289,13 +289,13 @@ class Database {
                 $updated += $this->conn->affected_rows;
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $message);
             }
         }
 
         // creo l'oggetto per la risposta
         $message = "$updated records updated";
-        $response = new Response($message, $queries);
+        $response = new Response(true, $message, $queries);
         return $response;
     }
 
@@ -327,7 +327,7 @@ class Database {
                         // controllo che non ci siano spazi nei campi
                         if (str_contains($field, " ")) {
                             $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, $message);
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -373,10 +373,10 @@ class Database {
 
                 // creo l'oggetto per la risposta
                 $message = "$selected records selected";
-                $response = new Response($message, $queries, $results);
+                $response = new Response(true, $message, $queries, $results);
             } catch (Exception $e) {
                 $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $message);
             }
         }
 
@@ -389,6 +389,7 @@ class Database {
 class Response {
     // ========================================= VARIABILI =========================================
 
+    public $status;
     public $message;
     public $query;
     public $result;
@@ -404,19 +405,34 @@ class Response {
         }
     }
 
-    public function __construct1($message) {
+    public function __construct2($status, $message) {
+        if ($status) {
+            $this->status = "ok";
+        } else {
+            $this->status = "error";
+        }
         $this->message = $message;
         $this->query = null;
         $this->result = null;
     }
 
-    public function __construct2($message, $query) {
+    public function __construct3($status, $message, $query) {
+        if ($status) {
+            $this->status = "ok";
+        } else {
+            $this->status = "error";
+        }
         $this->message = $message;
         $this->query = $query;
         $this->result = null;
     }
 
-    public function __construct3($message, $query, $result) {
+    public function __construct4($status, $message, $query, $result) {
+        if ($status) {
+            $this->status = "ok";
+        } else {
+            $this->status = "error";
+        }
         $this->message = $message;
         $this->query = $query;
         $this->result = $result;
