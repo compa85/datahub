@@ -16,15 +16,20 @@ $response = null;
 if ($database->error === null) {
     // controllare se è presente un json
     if (!empty($json)) {
-        // convertire il json in un oggetto
-        $data = json_decode($json);
-        // effettuare la select
-        $response = $database->select($data);
+        // controllo che il json sia valido
+        if (json_validate($json)) {
+            // convertire il json in un oggetto
+            $data = json_decode($json);
+            // effettuare la select
+            $response = $database->select($data);
+        } else {
+            $response = new Response(false, "JSON is invalid");
+        }
     } else {
-        $response = new Response("JSON is empty");
+        $response = new Response(false, "JSON is empty");
     }
 } else {
-    $response = new Response("Error: " . $database->error);
+    $response = new Response(false, $database->error);
 }
 
 // inviare la risposta
