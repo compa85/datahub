@@ -1,5 +1,5 @@
 import { useReducer } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { addRecord } from "../redux/dataSlice";
 import { dbInsert } from "../database";
 import {
@@ -12,7 +12,7 @@ import {
     Input,
 } from "@nextui-org/react";
 
-function CustomFormModal({ isOpen, onOpenChange }) {
+function CustomFormModal({ isOpen, onOpenChange, showToast }) {
     const dispatch = useDispatch();
 
     // form data
@@ -47,7 +47,7 @@ function CustomFormModal({ isOpen, onOpenChange }) {
     }
 
     // inserimento
-    function handleInsert() {
+    function handleSubmit() {
         let object = {
             attori: [
                 {
@@ -60,6 +60,7 @@ function CustomFormModal({ isOpen, onOpenChange }) {
         };
         dbInsert(object).then((response) => {
             console.log(response);
+            showToast(response);
             object = {
                 ...object,
                 attori: [
@@ -72,6 +73,11 @@ function CustomFormModal({ isOpen, onOpenChange }) {
             dispatch(addRecord(object.attori[0]));
             dispatchFormState({ type: "RESET" });
         });
+    }
+
+    // reset
+    function handleReset() {
+        dispatchFormState({ type: "RESET" });
     }
 
     return (
@@ -114,8 +120,11 @@ function CustomFormModal({ isOpen, onOpenChange }) {
                             />
                         </ModalBody>
                         <ModalFooter className="flex justify-center">
-                            <Button color="primary" onPress={handleInsert}>
+                            <Button color="primary" onPress={handleSubmit}>
                                 Aggiungi
+                            </Button>
+                            <Button color="default" onPress={handleReset}>
+                                Cancella
                             </Button>
                         </ModalFooter>
                     </>

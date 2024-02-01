@@ -20,7 +20,7 @@ import {
     faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 
-function CustomTable({ onOpen }) {
+function CustomTable({ onOpen, showToast }) {
     const data = useSelector((state) => state.data.values);
     const dispatch = useDispatch();
 
@@ -73,6 +73,7 @@ function CustomTable({ onOpen }) {
         };
         dbDelete(object).then((response) => {
             console.log(response);
+            showToast(response);
             dispatch(deleteRecord(id));
         });
     };
