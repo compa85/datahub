@@ -314,6 +314,57 @@ class Database {
 
         return new Response(true, "$selected records selected", $queries, $results);
     }
+
+
+    // ================================== SELEZIONE CAMPI TABELLA ==================================
+
+    public function getColumns($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
+
+        // controllo che esista l'array 'tables' nel JSON
+        if (property_exists($object, 'tables')) {
+            // array che contiene i nomi delle tabelle del db dai cui prendere i campi delle colonne
+            $tables = $object->tables;
+
+            // controllo che l'array 'tables' non sia vuoto
+            if (!empty($tables)) {
+                // scorro il vettore $tablse che rappresenta le tabelle del db
+                foreach ($tables as $table_name) {
+                    if (str_contains($table_name, " ")) {
+                        return new Response(false, "'$table_name' contains a space character");
+                    }
+
+                    // aggiungo la query all'array $queries
+                    $query = "SHOW COLUMNS FROM $table_name";
+                    array_push($queries, $query);
+                }
+            } else {
+                return new Response(false, "'tables' does not contain any table name");
+            }
+
+
+            // array che contiene i risultati delle query
+            $results = array();
+
+            // eseguo tutte le query se non si sono verificati errori
+            foreach ($queries as $query) {
+                try {
+                    // salvo in result il risultato della query
+                    $result = $this->conn->query($query);
+
+                    // aggiungo all'array $results il risultato della query come array associativo
+                    array_push($results, $result->fetch_all(MYSQLI_ASSOC));
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+
+            return new Response(true, "got columns of " . count($results) . " tables ", $queries, $results);
+        } else {
+            return new Response(false, "JSON does not contain array 'tables'");
+        }
+    }
 }
 
 
