@@ -1,8 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { dataReducer } from './dataSlice'
+import { columnsReducer } from './columnsSlice'
+import { rowsReducer } from './rowsSlice'
+import { loadingReducer } from './loadingSlice'
+import { formReducer } from './formSlice'
 
 export default configureStore({
     reducer: {
-        data: dataReducer,
+        columns: columnsReducer,
+        rows: rowsReducer,
+        loading: loadingReducer,
+        form: formReducer,
     },
 })

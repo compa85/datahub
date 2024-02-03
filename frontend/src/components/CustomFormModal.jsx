@@ -1,6 +1,7 @@
-import { useReducer } from "react";
-import { useDispatch } from "react-redux";
-import { addRecord } from "../redux/dataSlice";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { addRow } from "../redux/rowsSlice";
+import { addField, resetFields } from "../redux/formSlice";
 import { dbInsert } from "../database";
 import {
     Button,
@@ -10,114 +11,82 @@ import {
     ModalBody,
     ModalFooter,
     Input,
+    Spinner,
 } from "@nextui-org/react";
 
-function CustomFormModal({ isOpen, onOpenChange, showToast }) {
+function CustomFormModal({ table, isOpen, onOpenChange, showToast }) {
+    // ======================================== REDUX =========================================
+    const columns = useSelector((state) => state.columns.values);
+    const loading = useSelector((state) => state.loading.values);
+    const form = useSelector((state) => state.form.values);
     const dispatch = useDispatch();
-
-    // form data
-    const [formData, dispatchFormState] = useReducer(formReducer, {
-        Nome: "",
-        Cognome: "",
-        Nazionalita: "",
-        AnnoNascita: "",
-    });
-
-    // form reducer
-    function formReducer(state, action) {
-        switch (action.type) {
-            case "CHANGE_FIELD":
-                return { ...state, [action.field]: action.value };
-            case "RESET":
-                return {
-                    Nome: "",
-                    Cognome: "",
-                    Nazionalita: "",
-                    AnnoNascita: "",
-                };
-            default:
-                return state;
-        }
-    }
 
     // aggiornare il form
     function handleInputChange(e) {
         const { value, name } = e.target;
-        dispatchFormState({ type: "CHANGE_FIELD", field: name, value: value });
+        dispatch(addField({ fieldName: name, fieldValue: value }));
     }
 
-    // inserimento
+    // =================================== CARICAMENTO INPUT ==================================
+    useEffect(() => {
+        columns.forEach((column) => {
+            dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
+        });
+    }, [columns]);
+
+    // ====================================== INSERIMENTO =====================================
     function handleSubmit() {
-        let object = {
-            attori: [
-                {
-                    Nome: formData.Nome,
-                    Cognome: formData.Cognome,
-                    Nazionalita: formData.Nazionalita,
-                    AnnoNascita: formData.AnnoNascita,
-                },
-            ],
-        };
-        dbInsert(object).then((response) => {
+        let object = {};
+
+        for (const field in form) {
+            if (form[field] !== "") {
+                object[field] = form[field];
+            }
+        }
+
+        dbInsert({ [table]: [object] }).then((response) => {
             console.log(response);
             showToast(response);
+
             object = {
                 ...object,
-                attori: [
-                    {
-                        ...object.attori[0],
-                        CodAttore: String(response.result[0]),
-                    },
-                ],
+                CodAttore: String(response.result[0]),
             };
-            dispatch(addRecord(object.attori[0]));
-            dispatchFormState({ type: "RESET" });
+            dispatch(addRow(object));
+            dispatch(resetFields());
         });
     }
 
-    // reset
+    // ======================================== PULISCI =======================================
     function handleReset() {
-        dispatchFormState({ type: "RESET" });
+        dispatch(resetFields());
     }
 
+    // ======================================== RETURN ========================================
     return (
         <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
             <ModalContent>
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            Aggiungi attore
+                            Aggiungi
                         </ModalHeader>
                         <ModalBody>
-                            <Input
-                                name="Nome"
-                                placeholder="Nome"
-                                variant="bordered"
-                                value={formData.Nome}
-                                onChange={handleInputChange}
-                            />
-                            <Input
-                                name="Cognome"
-                                placeholder="Cognome"
-                                variant="bordered"
-                                value={formData.Cognome}
-                                onChange={handleInputChange}
-                            />
-                            <Input
-                                name="Nazionalita"
-                                placeholder="Nazionalità"
-                                variant="bordered"
-                                value={formData.Nazionalita}
-                                onChange={handleInputChange}
-                            />
-                            <Input
-                                name="AnnoNascita"
-                                placeholder="Anno di nascita"
-                                type="number"
-                                variant="bordered"
-                                value={formData.AnnoNascita}
-                                onChange={handleInputChange}
-                            />
+                            {loading.header == true ? (
+                                <Spinner label="Caricamento..." />
+                            ) : (
+                                columns.map((column) => (
+                                    <Input
+                                        isRequired
+                                        key={column.Field}
+                                        name={column.Field}
+                                        placeholder={column.Field}
+                                        variant="bordered"
+                                        value={form[column.Field]}
+                                        onChange={handleInputChange}
+                                    />
+                                ))
+                            )}
                         </ModalBody>
                         <ModalFooter className="flex justify-center">
                             <Button color="primary" onPress={handleSubmit}>

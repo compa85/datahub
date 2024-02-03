@@ -1,16 +1,21 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addRecords, deleteRecord } from "../redux/dataSlice";
-import { dbSelect, dbDelete } from "../database";
+import { addColumns } from "../redux/columnsSlice";
+import { addRows, deleteRow, deleteAllRows } from "../redux/rowsSlice";
+import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
+import { dbSelect, dbDelete, dbGetColumns } from "../database";
 import {
     Button,
+    Chip,
     Input,
+    Spinner,
     Table,
     TableHeader,
     TableBody,
     TableColumn,
     TableRow,
     TableCell,
+    Tooltip,
     getKeyValue,
 } from "@nextui-org/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,101 +25,135 @@ import {
     faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 
-function CustomTable({ onOpen, showToast }) {
-    const data = useSelector((state) => state.data.values);
+function CustomTable({ table, onOpen, showToast }) {
+    // ======================================== REDUX =========================================
+    const columns = useSelector((state) => state.columns.values);
+    const rows = useSelector((state) => state.rows.values);
+    const loading = useSelector((state) => state.loading.values);
     const dispatch = useDispatch();
 
-    // colonne della tabella
-    const columns = [
-        {
-            key: "CodAttore",
-            label: "ID",
-        },
-        {
-            key: "Nome",
-            label: "NOME",
-        },
-        {
-            key: "Cognome",
-            label: "COGNOME",
-        },
-        {
-            key: "Nazionalita",
-            label: "NAZIONALITÀ",
-        },
-        {
-            key: "AnnoNascita",
-            label: "ANNO NASCITA",
-        },
-        {
-            key: "Azioni",
-            label: "AZIONI",
-        },
-    ];
+    // ====================================== VARIABILI =======================================
+    // chiavi primarie della tabella
+    const [primaryKeys, setPrimaryKeys] = useState([]);
 
-    // caricare dati al caricamento della pagina
+    // ================================== CARICAMENTO TABELLA =================================
     useEffect(() => {
-        const object = {
-            attori: [],
-        };
-        dbSelect(object).then((response) => {
-            dispatch(addRecords(response.result[0]));
-        });
-    }, []);
+        dispatch(setHeaderLoading(true));
+        dispatch(setBodyLoading(true));
+        dispatch(deleteAllRows());
+        setPrimaryKeys([]);
 
-    // eliminazione
+        setTimeout(() => {
+            // carico le colonne della tabella (campi)
+            dbGetColumns({ tables: [table] }).then((response) => {
+                dispatch(addColumns(response.result[0]));
+                dispatch(setHeaderLoading(false));
+            });
+        }, 1000);
+
+        setTimeout(() => {
+            // carico le righe della tabella
+            dbSelect({ [table]: [] }).then((response) => {
+                dispatch(addRows(response.result[0]));
+                dispatch(setBodyLoading(false));
+            });
+        }, 1000);
+    }, [table]);
+
+    // =================================== CHIAVI PRIMARIE ====================================
+    useEffect(() => {
+        let array = [];
+        columns.forEach((column) => {
+            if (column.Key == "PRI") {
+                array.push(column.Field);
+            }
+        });
+        setPrimaryKeys(array);
+    }, [columns]);
+
+    // ===================================== AGGIORNAMENTO ====================================
+    const handleUpdate = () => {
+        console.log();
+    };
+
+    // ===================================== ELIMINAZIONE =====================================
     const handleDelete = (id) => {
         const object = {
-            attori: [
+            [table]: [
                 {
-                    CodAttore: id,
+                    [primaryKeys[0]]: id,
                 },
             ],
         };
         dbDelete(object).then((response) => {
-            console.log(response);
             showToast(response);
-            dispatch(deleteRecord(id));
+            dispatch(deleteRow({ fieldName: primaryKeys[0], fieldValue: id }));
         });
     };
 
+    // ======================================== RETURN ========================================
     return (
         <>
+            <div className="mb-4 flex justify-end gap-3">
+                <Button
+                    color="primary"
+                    endContent={<FontAwesomeIcon icon={faPlus} />}
+                    onPress={onOpen}
+                >
+                    Aggiungi
+                </Button>
+            </div>
+
             <Table
-                aria-label="Tabella attori"
+                aria-label="Tabella"
                 isHeaderSticky
-                bottomContent={
-                    <div className="flex w-full justify-center">
-                        <Button
-                            onPress={onOpen}
-                            startContent={<FontAwesomeIcon icon={faPlus} />}
-                        >
-                            Aggiungi
-                        </Button>
-                    </div>
-                }
                 classNames={{
-                    base: "max-h-[85vh] overflow-scroll",
+                    base: "max-h-[80vh] overflow-scroll",
                     table: "min-h-[400px]",
                 }}
             >
                 <TableHeader>
-                    {columns.map((column) => (
-                        <TableColumn key={column.key}>
-                            {column.label}
-                        </TableColumn>
-                    ))}
+                    {loading.header ? (
+                        <TableColumn>Caricamento...</TableColumn>
+                    ) : (
+                        columns.map((column) => (
+                            <TableColumn key={column.Field}>
+                                <Tooltip content={column.Type} placement="top">
+                                    <Chip className="cursor-pointer bg-transparent">
+                                        {column.Field}
+                                    </Chip>
+                                </Tooltip>
+                            </TableColumn>
+                        ))
+                    )}
+                    <TableColumn key="Azioni">
+                        <Chip className="cursor-pointer bg-transparent">
+                            Azioni
+                        </Chip>
+                    </TableColumn>
                 </TableHeader>
-                <TableBody>
-                    {data.map((item) => (
-                        <TableRow key={item.CodAttore}>
-                            {(columnKey) =>
-                                columnKey == "Azioni" ? (
-                                    <TableCell>
+                <TableBody
+                    isLoading={loading.body}
+                    loadingContent={<Spinner label="Caricamento..." />}
+                >
+                    {rows.map((item, index) => (
+                        <TableRow
+                            key={
+                                primaryKeys.length > 0
+                                    ? item[primaryKeys][0]
+                                    : index
+                            }
+                        >
+                            {(columnKey) => (
+                                <TableCell>
+                                    {columnKey == "Azioni" ? (
                                         <div className="relative flex items-center">
                                             <Button
                                                 isIconOnly
                                                 className="bg-transparent"
+                                                onPress={() => {
+                                                    handleUpdate();
+                                                }}
                                             >
                                                 <FontAwesomeIcon
                                                     icon={faPenToSquare}
@@ -127,7 +166,7 @@ function CustomTable({ onOpen, showToast }) {
                                                 className="bg-transparent"
                                                 onPress={() => {
                                                     handleDelete(
-                                                        item.CodAttore,
+                                                        item[primaryKeys[0]],
                                                     );
                                                 }}
                                             >
@@ -137,9 +176,7 @@ function CustomTable({ onOpen, showToast }) {
                                                 />
                                             </Button>
                                         </div>
-                                    </TableCell>
-                                ) : (
-                                    <TableCell>
+                                    ) : (
                                         <Input
                                             isReadOnly
                                             type="text"
@@ -155,9 +192,9 @@ function CustomTable({ onOpen, showToast }) {
                                             }
                                             variant="bordered"
                                         />
-                                    </TableCell>
-                                )
-                            }
+                                    )}
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))}
                 </TableBody>

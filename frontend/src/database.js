@@ -46,5 +46,16 @@ async function dbDelete(object) {
     return json;
 }
 
+// get columns
+async function dbGetColumns(object) {
+    let response = await fetch(`http://${host}/api/getcolumns.php`, {
+        method: "POST",
+        "Content-Type": "application/json",
+        body: JSON.stringify(object),
+    });
+    let json = await response.json();
+    return json;
+}
 
-export { dbSelect, dbInsert, dbUpdate, dbDelete };
+
+export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns };
