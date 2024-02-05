@@ -1,7 +1,6 @@
 // variabili
 const host = "localhost:3001";
 
-
 // select
 async function dbSelect(object) {
     let response = await fetch(`http://${host}/api/select.php`, {
@@ -11,7 +10,7 @@ async function dbSelect(object) {
     });
     let json = await response.json();
     return json;
-};
+}
 
 // insert
 async function dbInsert(object) {
@@ -56,6 +55,5 @@ async function dbGetColumns(object) {
     let json = await response.json();
     return json;
 }
-
 
 export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns };

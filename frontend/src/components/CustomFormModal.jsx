@@ -1,27 +1,33 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addRow } from "../redux/rowsSlice";
 import { addField, resetFields } from "../redux/formSlice";
 import { dbInsert } from "../database";
-import {
-    Button,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Input,
-    Spinner,
-} from "@nextui-org/react";
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Spinner } from "@nextui-org/react";
 
-function CustomFormModal({ table, isOpen, onOpenChange, showToast }) {
+function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }) {
     // ======================================== REDUX =========================================
     const columns = useSelector((state) => state.columns.values);
     const loading = useSelector((state) => state.loading.values);
     const form = useSelector((state) => state.form.values);
     const dispatch = useDispatch();
 
-    // aggiornare il form
+    // ====================================== VARIABILI =======================================
+    // chiavi primarie della tabella
+    const [primaryKeys, setPrimaryKeys] = useState([]);
+
+    // =================================== CHIAVI PRIMARIE ====================================
+    useEffect(() => {
+        let array = [];
+        columns.forEach((column) => {
+            if (column.Key == "PRI") {
+                array.push(column.Field);
+            }
+        });
+        setPrimaryKeys(array);
+    }, [columns]);
+
+    // ================================== AGGIORNAMENTO INPUT =================================
     function handleInputChange(e) {
         const { value, name } = e.target;
         dispatch(addField({ fieldName: name, fieldValue: value }));
@@ -45,19 +51,17 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast }) {
         }
 
         dbInsert({ [table]: [object] }).then((response) => {
-            console.log(response);
             showToast(response);
-
             object = {
                 ...object,
-                CodAttore: String(response.result[0]),
+                [primaryKeys[0]]: String(response.result[0]),
             };
             dispatch(addRow(object));
             dispatch(resetFields());
         });
     }
 
-    // ======================================== PULISCI =======================================
+    // ======================================== RESET =========================================
     function handleReset() {
         dispatch(resetFields());
     }
@@ -68,21 +72,20 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast }) {
             <ModalContent>
                 {(onClose) => (
                     <>
-                        <ModalHeader className="flex flex-col gap-1">
-                            Aggiungi
-                        </ModalHeader>
+                        <ModalHeader className="flex flex-col gap-1">Aggiungi</ModalHeader>
                         <ModalBody>
                             {loading.header == true ? (
                                 <Spinner label="Caricamento..." />
                             ) : (
                                 columns.map((column) => (
                                     <Input
-                                        isRequired
                                         key={column.Field}
                                         name={column.Field}
+                                        type={numericType.some((type) => column.Type.includes(type)) ? "number" : "text"}
+                                        isRequired
                                         placeholder={column.Field}
-                                        variant="bordered"
                                         value={form[column.Field]}
+                                        variant="bordered"
                                         onChange={handleInputChange}
                                     />
                                 ))

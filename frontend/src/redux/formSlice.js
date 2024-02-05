@@ -1,9 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from "@reduxjs/toolkit";
 
 export const formSlice = createSlice({
-    name: 'form',
+    name: "form",
     initialState: {
-        values: {}
+        values: {},
     },
     reducers: {
         addField: (state, action) => {
@@ -11,10 +11,10 @@ export const formSlice = createSlice({
             state.values[fieldName] = fieldValue;
         },
         resetFields: (state, action) => {
-            state.values = {}
+            state.values = {};
         },
     },
-})
+});
 
-export const { addField, resetFields } = formSlice.actions
-export const formReducer = formSlice.reducer
+export const { addField, resetFields } = formSlice.actions;
+export const formReducer = formSlice.reducer;

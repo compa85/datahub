@@ -1,19 +1,19 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from "@reduxjs/toolkit";
 
 export const columnsSlice = createSlice({
-    name: 'columns',
+    name: "columns",
     initialState: {
-        values: []
+        values: [],
     },
     reducers: {
         addColumn: (state, action) => {
-            state.values.push(action.payload)
+            state.values.push(action.payload);
         },
         addColumns: (state, action) => {
-            state.values = action.payload
+            state.values = action.payload;
         },
     },
-})
+});
 
-export const { addColumn, addColumns } = columnsSlice.actions
-export const columnsReducer = columnsSlice.reducer
+export const { addColumn, addColumns } = columnsSlice.actions;
+export const columnsReducer = columnsSlice.reducer;

@@ -12,6 +12,8 @@ function App() {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     // nome della tabella
     const [table, setTable] = useState("attori");
+    // tipologie numeriche di dato
+    const numericType = ["int", "decimal", "numeric", "float", "double", "real", "bit", "serial"];
 
     // mostrare toast
     const showToast = (response) => {
@@ -39,35 +41,14 @@ function App() {
         <>
             <div className="flex max-w-60 flex-col gap-4">
                 <Input placeholder="Nome tabella" id="table-name" size="sm" />
-                <Button
-                    onPress={() =>
-                        setTable(document.querySelector("#table-name").value)
-                    }
-                >
-                    Carica
-                </Button>
+                <Button onPress={() => setTable(document.querySelector("#table-name").value)}>Carica</Button>
             </div>
 
-            <CustomTable
-                table={table}
-                showToast={showToast}
-                onOpen={onOpen}
-            ></CustomTable>
+            <CustomTable table={table} showToast={showToast} onOpen={onOpen} numericType={numericType}></CustomTable>
 
-            <CustomFormModal
-                table={table}
-                showToast={showToast}
-                isOpen={isOpen}
-                onOpenChange={onOpenChange}
-            ></CustomFormModal>
+            <CustomFormModal table={table} showToast={showToast} isOpen={isOpen} onOpenChange={onOpenChange} numericType={numericType}></CustomFormModal>
 
-            <ToastContainer
-                position="bottom-right"
-                autoClose={3000}
-                draggable
-                pauseOnFocusLoss={false}
-                toastClassName="bg-content1"
-            />
+            <ToastContainer position="bottom-right" autoClose={3000} draggable pauseOnFocusLoss={false} toastClassName="bg-content1" />
         </>
     );
 }
