@@ -48,7 +48,7 @@ function App() {
 
             <CustomFormModal table={table} showToast={showToast} isOpen={isOpen} onOpenChange={onOpenChange} numericType={numericType}></CustomFormModal>
 
-            <ToastContainer position="bottom-right" autoClose={3000} draggable pauseOnFocusLoss={false} toastClassName="bg-content1" />
+            <ToastContainer position="bottom-right" autoClose={4000} pauseOnFocusLoss={false} hideProgressBar stacked theme="dark" />
         </>
     );
 }

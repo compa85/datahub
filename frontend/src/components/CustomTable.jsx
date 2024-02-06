@@ -29,22 +29,18 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
         setPrimaryKeys([]);
         setUpdatingRow(null);
 
-        setTimeout(() => {
-            // carico le colonne della tabella (campi)
-            dbGetColumns({ tables: [table] }).then((response) => {
-                dispatch(addColumns(response.result[0]));
-                dispatch(setHeaderLoading(false));
-            });
-        }, 1000);
+        // carico le colonne della tabella (campi)
+        dbGetColumns({ tables: [table] }).then((response) => {
+            dispatch(addColumns(response.result[0]));
+            dispatch(setHeaderLoading(false));
+        });
 
-        setTimeout(() => {
-            // carico le righe della tabella
-            dbSelect({ [table]: [] }).then((response) => {
-                let rows = response.result.length > 0 ? response.result[0] : [];
-                dispatch(addRows(rows));
-                dispatch(setBodyLoading(false));
-            });
-        }, 1000);
+        // carico le righe della tabella
+        dbSelect({ [table]: [] }).then((response) => {
+            let rows = response.result.length > 0 ? response.result[0] : [];
+            dispatch(addRows(rows));
+            dispatch(setBodyLoading(false));
+        });
     }, [table]);
 
     // =================================== CHIAVI PRIMARIE ====================================
