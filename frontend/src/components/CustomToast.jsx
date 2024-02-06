@@ -2,7 +2,7 @@ import { Button } from "@nextui-org/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
-function Toast({ children }) {
+function CustomToast({ children }) {
     return (
         <div className="bg-content1 shadow-small rounded-large absolute bottom-4 right-4">
             <div className="flex items-center gap-4 p-2">
@@ -16,4 +16,4 @@ function Toast({ children }) {
     );
 }
 
-export default Toast;
+export default CustomToast;

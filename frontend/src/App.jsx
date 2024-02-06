@@ -1,242 +1,54 @@
 import React from "react";
-import { useState, useEffect } from "react";
-import {
-    Button,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Input,
-    Table,
-    TableHeader,
-    TableBody,
-    TableColumn,
-    TableRow,
-    TableCell,
-    getKeyValue,
-    useDisclosure,
-} from "@nextui-org/react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { dbSelect, dbInsert, dbUpdate, dbDelete } from "./database";
-import Toast from "./components/Toast";
+import { useState } from "react";
+import { useDisclosure } from "@nextui-org/react";
+import CustomTable from "./components/CustomTable";
+import CustomFormModal from "./components/CustomFormModal";
+import { ToastContainer, toast } from "react-toastify";
+import { Button, Input } from "@nextui-org/react";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-    // =========================================== STATI ===========================================
-    // dati degli attori
-    const [data, setData] = useState([]);
-    // dati del form di inserimento
-    const [formData, setFormData] = useState({
-        Nome: "",
-        Cognome: "",
-        Nazionalita: "",
-        AnnoNascita: "",
-    });
     // stato del form (se aperto o chiuso)
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    // colonne della tabella
-    const columns = [
-        {
-            key: "CodAttore",
-            label: "ID",
-        },
-        {
-            key: "Nome",
-            label: "NOME",
-        },
-        {
-            key: "Cognome",
-            label: "COGNOME",
-        },
-        {
-            key: "Nazionalita",
-            label: "NAZIONALITÀ",
-        },
-        {
-            key: "AnnoNascita",
-            label: "ANNO NASCITA",
-        },
-        {
-            key: "Azioni",
-            label: "AZIONI",
-        },
-    ];
+    // nome della tabella
+    const [table, setTable] = useState("attori");
+    // tipologie numeriche di dato
+    const numericType = ["int", "decimal", "numeric", "float", "double", "real", "bit", "serial"];
 
-    const handleInputChange = (e) => {
-        const { value, name } = e.target;
-        setFormData({ ...formData, [name]: value });
+    // mostrare toast
+    const showToast = (response) => {
+        let message = response.message;
+        let type = response.status == "ok" ? "success" : "error";
+
+        switch (type) {
+            case "info":
+                toast.info(message);
+            case "success":
+                toast.success(message);
+                break;
+            case "warn":
+                toast.warn(message);
+                break;
+            case "error":
+                toast.error(message);
+                break;
+            default:
+                break;
+        }
     };
 
-    // ========================================== EFFETTI ==========================================
-    // caricare dati al caricamento della pagina
-    useEffect(() => {
-        const object = {
-            attori: [],
-        };
-        dbSelect(object).then((response) =>
-            response.result != null
-                ? setData(response.result[0])
-                : console.log(response),
-        );
-    }, []);
-
-    // ======================================== INSERIMENTO ========================================
-    const handleInsert = () => {
-        const object = {
-            attori: [
-                {
-                    Nome: formData.Nome,
-                    Cognome: formData.Cognome,
-                    Nazionalita: formData.Nazionalita,
-                    AnnoNascita: formData.AnnoNascita,
-                },
-            ],
-        };
-        dbInsert(object).then((response) =>
-            setData([...data, object.attori[0]]),
-        );
-        setFormData({
-            Nome: "",
-            Cognome: "",
-            Nazionalita: "",
-            AnnoNascita: "",
-        });
-    };
-
-    // ======================================== ELIMINAZIONE =======================================
-    const handleDelete = (id) => {
-        const object = {
-            attori: [
-                {
-                    codAttore: id,
-                },
-            ],
-        };
-
-        dbDelete(object).then((response) =>
-            setData(data.filter((item) => item.CodAttore !== id)),
-        );
-    };
-
-    // =========================================== RETURN ==========================================
     return (
         <>
-            <Table
-                aria-label="Tabella attori"
-                isHeaderSticky
-                bottomContent={
-                    <div className="flex w-full justify-center">
-                        <Button onPress={onOpen}>Aggiungi</Button>
-                    </div>
-                }
-                classNames={{
-                    base: "max-h-[85vh] overflow-scroll",
-                    table: "min-h-[400px]",
-                }}
-            >
-                <TableHeader>
-                    {columns.map((column) => (
-                        <TableColumn key={column.key}>
-                            {column.label}
-                        </TableColumn>
-                    ))}
-                </TableHeader>
-                <TableBody>
-                    {data.map((item) => (
-                        <TableRow key={item.CodAttore}>
-                            {(columnKey) =>
-                                columnKey == "Azioni" ? (
-                                    <TableCell>
-                                        <div className="relative flex items-center">
-                                            <Button
-                                                isIconOnly
-                                                className="bg-transparent"
-                                            >
-                                                <FontAwesomeIcon
-                                                    icon={faPenToSquare}
-                                                    className="text-default-400 text-md"
-                                                />
-                                            </Button>
-                                            <Button
-                                                isIconOnly
-                                                text-danger
-                                                className="bg-transparent"
-                                                onClick={() => {
-                                                    handleDelete(
-                                                        item.CodAttore,
-                                                    );
-                                                }}
-                                            >
-                                                <FontAwesomeIcon
-                                                    icon={faTrash}
-                                                    className="text-danger text-md"
-                                                />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                ) : (
-                                    <TableCell>
-                                        {getKeyValue(item, columnKey)}
-                                    </TableCell>
-                                )
-                            }
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <div className="flex max-w-60 flex-col gap-4">
+                <Input placeholder="Nome tabella" id="table-name" size="sm" />
+                <Button onPress={() => setTable(document.querySelector("#table-name").value)}>Carica</Button>
+            </div>
 
-            <Modal
-                isOpen={isOpen}
-                onOpenChange={onOpenChange}
-                placement="top-center"
-            >
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader className="flex flex-col gap-1">
-                                Aggiungi attore
-                            </ModalHeader>
-                            <ModalBody>
-                                <Input
-                                    name="Nome"
-                                    placeholder="Nome"
-                                    variant="bordered"
-                                    value={formData.Nome}
-                                    onChange={handleInputChange}
-                                />
-                                <Input
-                                    name="Cognome"
-                                    placeholder="Cognome"
-                                    variant="bordered"
-                                    value={formData.Cognome}
-                                    onChange={handleInputChange}
-                                />
-                                <Input
-                                    name="Nazionalita"
-                                    placeholder="Nazionalità"
-                                    variant="bordered"
-                                    value={formData.Nazionalita}
-                                    onChange={handleInputChange}
-                                />
-                                <Input
-                                    name="AnnoNascita"
-                                    placeholder="Anno di nascita"
-                                    type="number"
-                                    variant="bordered"
-                                    value={formData.AnnoNascita}
-                                    onChange={handleInputChange}
-                                />
-                            </ModalBody>
-                            <ModalFooter className="flex justify-center">
-                                <Button color="primary" onPress={handleInsert}>
-                                    Aggiungi
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <CustomTable table={table} showToast={showToast} onOpen={onOpen} numericType={numericType}></CustomTable>
+
+            <CustomFormModal table={table} showToast={showToast} isOpen={isOpen} onOpenChange={onOpenChange} numericType={numericType}></CustomFormModal>
+
+            <ToastContainer position="bottom-right" autoClose={4000} pauseOnFocusLoss={false} hideProgressBar stacked theme="dark" />
         </>
     );
 }

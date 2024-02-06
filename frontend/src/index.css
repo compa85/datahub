@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+    --toastify-color-light: #f4f4f5;
+    --toastify-color-dark: #27272a;
+    --toastify-color-info: #006fee;
+    --toastify-color-success: #17c964;
+    --toastify-color-warning: #f5a524;
+    --toastify-color-error: #f31260;
+    --toastify-text-color-light: #11181c;
+    --toastify-text-color-dark: #ecedee;
+}
+
+.Toastify__toast {
+    border-radius: 14px;
+    box-shadow:
+        0 1px 3px 0 rgb(0 0 0 / 0.1),
+        0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
