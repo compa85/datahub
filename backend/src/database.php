@@ -1,11 +1,11 @@
 <?php
+include "response.php";
 
 // =========================================== DATABASE ============================================
 class Database {
     // ========================================= VARIABILI =========================================
 
     public $conn;
-    public $error;
 
 
     // ======================================== COSTRUTTORE ========================================
@@ -14,7 +14,7 @@ class Database {
         try {
             $this->conn = @new mysqli($host, $username, $password, $database, $port);
         } catch (Exception $e) {
-            $this->error = $e->getMessage();
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -364,29 +364,5 @@ class Database {
         } else {
             return new Response(false, "JSON does not contain array 'tables'");
         }
-    }
-}
-
-
-// =========================================== RISPOSTA ============================================
-class Response {
-    // ========================================= VARIABILI =========================================
-
-    public $status;
-    public $message;
-    public $query;
-    public $result;
-
-
-    // ======================================== COSTRUTTORI ========================================
-    public function __construct($status, $message, $query = null, $result = null) {
-        if ($status) {
-            $this->status = "ok";
-        } else {
-            $this->status = "error";
-        }
-        $this->message = $message;
-        $this->query = $query;
-        $this->result = $result;
     }
 }
