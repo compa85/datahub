@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # Frontend
 frontend/node_modules
+frontend/package-lock.json
 frontend/dist
 frontend/dist-ssr
 frontend/*.local

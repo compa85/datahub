@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addRow } from "../redux/rowsSlice";
-import { addField, resetFields } from "../redux/formSlice";
+import { addField, resetField, resetFields } from "../redux/formSlice";
 import { dbInsert } from "../database";
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Spinner } from "@nextui-org/react";
 
@@ -36,7 +36,11 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }
     // =================================== CARICAMENTO INPUT ==================================
     useEffect(() => {
         columns.forEach((column) => {
-            dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
+            if (primaryKeys[0] === column.Field) {
+                dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
+            } else {
+                dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
+            }
         });
     }, [columns]);
 
@@ -80,13 +84,16 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }
                                 columns.map((column) => (
                                     <Input
                                         key={column.Field}
+                                        label={column.Field}
                                         name={column.Field}
                                         type={numericType.some((type) => column.Type.includes(type)) ? "number" : "text"}
-                                        isRequired
-                                        placeholder={column.Field}
+                                        isRequired={column.Null === "YES" ? false : true}
+                                        isReadOnly={primaryKeys[0] === column.Field ? true : false}
+                                        {...(primaryKeys[0] === column.Field ? "isClearable" : "")}
                                         value={form[column.Field]}
                                         variant="bordered"
                                         onChange={handleInputChange}
+                                        onClear={primaryKeys[0] === column.Field ? "" : () => dispatch(resetField(column.Field))}
                                     />
                                 ))
                             )}

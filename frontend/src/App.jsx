@@ -40,7 +40,7 @@ function App() {
     return (
         <>
             <div className="flex max-w-60 flex-col gap-4">
-                <Input placeholder="Nome tabella" id="table-name" size="sm" />
+                <Input label="Nome tabella" id="table-name" size="sm" />
                 <Button onPress={() => setTable(document.querySelector("#table-name").value)}>Carica</Button>
             </div>
 

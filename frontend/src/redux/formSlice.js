@@ -10,11 +10,14 @@ export const formSlice = createSlice({
             const { fieldName, fieldValue } = action.payload;
             state.values[fieldName] = fieldValue;
         },
+        resetField: (state, action) => {
+            state.values[action.payload] = "";
+        },
         resetFields: (state, action) => {
             state.values = {};
         },
     },
 });
 
-export const { addField, resetFields } = formSlice.actions;
+export const { addField, resetField, resetFields } = formSlice.actions;
 export const formReducer = formSlice.reducer;
