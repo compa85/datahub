@@ -1,11 +1,11 @@
 <?php
+include "response.php";
 
 // =========================================== DATABASE ============================================
 class Database {
     // ========================================= VARIABILI =========================================
 
     public $conn;
-    public $error;
 
 
     // ======================================== COSTRUTTORE ========================================
@@ -14,7 +14,7 @@ class Database {
         try {
             $this->conn = @new mysqli($host, $username, $password, $database, $port);
         } catch (Exception $e) {
-            $this->error = $e->getMessage();
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -322,7 +322,7 @@ class Database {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
 
-        // controllo che esista l'array 'tables' nel JSON
+        // controllo che esista l'array tables
         if (property_exists($object, 'tables')) {
             // array che contiene i nomi delle tabelle del db dai cui prendere i campi delle colonne
             $tables = $object->tables;
@@ -331,6 +331,7 @@ class Database {
             if (!empty($tables)) {
                 // scorro il vettore $tablse che rappresenta le tabelle del db
                 foreach ($tables as $table_name) {
+                    // controllo che non ci siano spazi nei campi
                     if (str_contains($table_name, " ")) {
                         return new Response(false, "'$table_name' contains a space character");
                     }
@@ -360,33 +361,71 @@ class Database {
                 }
             }
 
-            return new Response(true, "got columns of " . count($results) . " tables ", $queries, $results);
+            return new Response(true, "Got columns of " . count($results) . " tables ", $queries, $results);
         } else {
             return new Response(false, "JSON does not contain array 'tables'");
         }
     }
-}
 
 
-// =========================================== RISPOSTA ============================================
-class Response {
-    // ========================================= VARIABILI =========================================
+    // ==================================== SELEZIONE ULTIMO ID ====================================
 
-    public $status;
-    public $message;
-    public $query;
-    public $result;
+    public function getLastId($object, $database_name) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
 
+        // controllo che esista l'array tables
+        if (property_exists($object, 'tables')) {
+            // array che contiene i nomi delle tabelle del db dai cui prendere i valore massimi
+            $tables = $object->tables;
 
-    // ======================================== COSTRUTTORI ========================================
-    public function __construct($status, $message, $query = null, $result = null) {
-        if ($status) {
-            $this->status = "ok";
+            // controllo che l'array tables non sia vuoto
+            if (!empty($tables)) {
+                // scorro il vettore $tables che rappresenta le tabelle del db
+                foreach ($tables as $table_name) {
+                    // controllo che non ci siano spazi nei campi
+                    if (str_contains($table_name, " ")) {
+                        return new Response(false, "'$table_name' contains a space character");
+                    }
+
+                    try {
+                        // ottengo i nomi delle colonne che contengono le chiavi primarie
+                        $keys = $this->conn->query("SELECT column_name FROM information_schema.columns WHERE table_schema = '$database_name' AND table_name = '$table_name' AND COLUMN_KEY = 'PRI'");
+                        $keys = $keys->fetch_all(MYSQLI_ASSOC);
+
+                        foreach ($keys as $key) {
+                            // aggiungo all'array $queries la query per ottenere il maggior valore della chiave primaria
+                            $query = "SELECT MAX({$key["column_name"]}) AS {$key["column_name"]} FROM $table_name";
+                            array_push($queries, $query);
+                        }
+                    } catch (Exception $e) {
+                        return new Response(false, $e->getMessage());
+                    }
+                }
+            } else {
+                return new Response(false, "'tables' does not contain any table name");
+            }
+
+            // array che contiene i risultati delle query
+            $results = array();
+
+            // eseguo tutte le query se non si sono verificati errori
+            foreach ($queries as $query) {
+                try {
+                    // eseguo la query per ottene l'ultimo id di ogni colonna 
+                    $result = $this->conn->query($query);
+                    $result = $result->fetch_all(MYSQLI_ASSOC);
+
+                    // prendo i valori e li salvo come oggetti
+                    array_push($results, $result);
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+
+            return new Response(true, "Got last id of " . count($results) . " columns ", $queries, $results);
         } else {
-            $this->status = "error";
+            return new Response(false, "JSON does not contain array 'tables'");
         }
-        $this->message = $message;
-        $this->query = $query;
-        $this->result = $result;
     }
 }

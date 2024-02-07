@@ -27,7 +27,7 @@ services:
             dockerfile: ./backend/php.dockerfile
         restart: unless-stopped
         volumes:
-            - ./backend:/var/www/html
+            - ./backend/src:/var/www/html
         ports:
             - "3001:80"
         depends_on:
