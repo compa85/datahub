@@ -55,13 +55,15 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }
         }
 
         dbInsert({ [table]: [object] }).then((response) => {
+            if (response.status === "ok") {
+                object = {
+                    ...object,
+                    [primaryKeys[0]]: String(response.result[0]),
+                };
+                dispatch(addRow(object));
+                dispatch(resetFields());
+            }
             showToast(response);
-            object = {
-                ...object,
-                [primaryKeys[0]]: String(response.result[0]),
-            };
-            dispatch(addRow(object));
-            dispatch(resetFields());
         });
     }
 

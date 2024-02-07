@@ -12,8 +12,11 @@ export const columnsSlice = createSlice({
         addColumns: (state, action) => {
             state.values = action.payload;
         },
+        deleteAllColumns: (state, action) => {
+            state.values.length = 0;
+        },
     },
 });
 
-export const { addColumn, addColumns } = columnsSlice.actions;
+export const { addColumn, addColumns, deleteAllColumns } = columnsSlice.actions;
 export const columnsReducer = columnsSlice.reducer;

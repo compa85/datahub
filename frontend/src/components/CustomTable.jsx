@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addColumns } from "../redux/columnsSlice";
+import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
 import { addRows, updateRow, deleteRow, deleteAllRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
 import { dbSelect, dbDelete, dbUpdate, dbGetColumns } from "../database";
@@ -11,7 +11,7 @@ import { faPenToSquare, faTrash, faPlus, faCheck, faXmark } from "@fortawesome/f
 function CustomTable({ table, onOpen, showToast, numericType }) {
     // ======================================== REDUX =========================================
     const columns = useSelector((state) => state.columns.values);
-    const rows = useSelector((state) => state.rows);
+    const rows = useSelector((state) => state.rows.values);
     const loading = useSelector((state) => state.loading.values);
     const dispatch = useDispatch();
 
@@ -23,22 +23,34 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
 
     // ================================== CARICAMENTO TABELLA =================================
     useEffect(() => {
+        // imposto gli stati dei caricamenti a true
         dispatch(setHeaderLoading(true));
         dispatch(setBodyLoading(true));
+        // elimino tutti i dati delle colonne e delle righe
+        dispatch(deleteAllColumns());
         dispatch(deleteAllRows());
+        // reimposto primaryKeys e updatingRow
         setPrimaryKeys([]);
         setUpdatingRow(null);
 
         // carico le colonne della tabella (campi)
         dbGetColumns({ tables: [table] }).then((response) => {
-            dispatch(addColumns(response.result[0]));
+            if (response.status === "ok") {
+                dispatch(addColumns(response.result[0]));
+            } else {
+                showToast(response);
+            }
             dispatch(setHeaderLoading(false));
         });
 
         // carico le righe della tabella
         dbSelect({ [table]: [] }).then((response) => {
-            let rows = response.result.length > 0 ? response.result[0] : [];
-            dispatch(addRows(rows));
+            if (response.status === "ok") {
+                let rows = response.result.length > 0 ? response.result[0] : [];
+                dispatch(addRows(rows));
+            } else {
+                showToast(response);
+            }
             dispatch(setBodyLoading(false));
         });
     }, [table]);
@@ -59,13 +71,13 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
         setUpdatingRow(row);
     };
 
-    function handleInputChange(e) {
+    const handleInputChange = (e) => {
         const { value, name } = e.target;
         setUpdatingRow({ ...updatingRow, [name]: value });
-    }
+    };
 
+    // confermare la modifica
     const confirmUpdate = () => {
-        dispatch(updateRow({ fieldName: primaryKeys[0], object: updatingRow }));
         const { [primaryKeys[0]]: _, ...object } = updatingRow;
         let newObject = {
             [table]: [
@@ -77,19 +89,23 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
                 ],
             ],
         };
+
         dbUpdate(newObject).then((response) => {
+            if (response.status === "ok") {
+                dispatch(updateRow({ fieldName: primaryKeys[0], object: updatingRow }));
+                setUpdatingRow(null);
+            }
             showToast(response);
         });
-        setUpdatingRow(null);
     };
 
+    // scartare la modifica
     const discardUpdate = () => {
         setUpdatingRow(null);
     };
 
     // ===================================== ELIMINAZIONE =====================================
     const handleDelete = (id) => {
-        dispatch(deleteRow({ fieldName: primaryKeys[0], fieldValue: [id] }));
         const object = {
             [table]: [
                 {
@@ -97,7 +113,11 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
                 },
             ],
         };
+
         dbDelete(object).then((response) => {
+            if (response.status === "ok") {
+                dispatch(deleteRow({ fieldName: primaryKeys[0], fieldValue: [id] }));
+            }
             showToast(response);
         });
     };

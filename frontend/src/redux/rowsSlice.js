@@ -2,32 +2,34 @@ import { createSlice } from "@reduxjs/toolkit";
 
 export const rowsSlice = createSlice({
     name: "rows",
-    initialState: [],
+    initialState: {
+        values: [],
+    },
     reducers: {
         addRow: (state, action) => {
-            state.push(action.payload);
+            state.values.push(action.payload);
         },
         addRows: (state, action) => {
-            return action.payload;
+            state.values = action.payload;
         },
         updateRow: (state, action) => {
             const { fieldName, object } = action.payload;
             // salvo in rowIndex l'indice della riga che si vuole modificare
-            const rowIndex = state.findIndex((row) => row[fieldName] === object[fieldName]);
-            const newObj = { ...object, [fieldName]: state[rowIndex][fieldName] };
+            const rowIndex = state.values.findIndex((row) => row[fieldName] === object[fieldName]);
+            const newObj = { ...object, [fieldName]: state.values[rowIndex][fieldName] };
             // controllo se esiste un elemento con indice rowIndex
             if (rowIndex !== -1) {
-                state[rowIndex] = { ...state[rowIndex], ...newObj };
+                state.values[rowIndex] = { ...state.values[rowIndex], ...newObj };
             }
         },
         deleteRow: (state, action) => {
             const { fieldName, fieldValue } = action.payload;
             // salvo in rowIndex l'indice della riga che si vuole eliminare
-            const rowIndex = state.findIndex((row) => row[fieldName] == fieldValue);
-            state.splice(rowIndex, 1);
+            const rowIndex = state.values.findIndex((row) => row[fieldName] == fieldValue);
+            state.values.splice(rowIndex, 1);
         },
         deleteAllRows: (state, action) => {
-            state.length = 0;
+            state.values.length = 0;
         },
     },
 });
