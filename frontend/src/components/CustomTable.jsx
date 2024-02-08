@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { loadTable, setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
 import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
 import { addRows, updateRow, deleteRow, deleteAllRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
@@ -8,16 +9,18 @@ import { Button, Chip, Input, Spinner, Table, TableHeader, TableBody, TableColum
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faTrash, faPlus, faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
 
-function CustomTable({ table, onOpen, showToast, numericType }) {
+function CustomTable({ onOpen, showToast }) {
     // ======================================== REDUX =========================================
+    const database = useSelector((state) => state.database);
+    const table = database.table;
+    const primaryKeys = database.primaryKeys;
+    const numericType = database.numericTypes;
     const columns = useSelector((state) => state.columns.values);
     const rows = useSelector((state) => state.rows.values);
     const loading = useSelector((state) => state.loading.values);
     const dispatch = useDispatch();
 
     // ====================================== VARIABILI =======================================
-    // chiavi primarie della tabella
-    const [primaryKeys, setPrimaryKeys] = useState([]);
     // riga da modificare
     const [updatingRow, setUpdatingRow] = useState(null);
 
@@ -26,51 +29,65 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
         // imposto gli stati dei caricamenti a true
         dispatch(setHeaderLoading(true));
         dispatch(setBodyLoading(true));
-        // elimino tutti i dati delle colonne e delle righe
+        // elimino tutti i dati delle colonne, delle righe e delle chiavi primarie
         dispatch(deleteAllColumns());
         dispatch(deleteAllRows());
-        // reimposto primaryKeys e updatingRow
-        setPrimaryKeys([]);
+        dispatch(deleteAllPrimaryKeys());
+        // reimposto updatingRow
         setUpdatingRow(null);
+        // carico il valore di table salvato nel local storage
+        dispatch(loadTable());
 
-        // carico le colonne della tabella (campi)
-        dbGetColumns({ tables: [table] }).then((response) => {
-            if (response.status === "ok") {
-                dispatch(addColumns(response.result[0]));
-            } else {
-                showToast(response);
-            }
+        // controllo che sia presente un nome della tabella
+        if ((table !== null) && (table !== "")) {
+            // carico le colonne della tabella
+            dbGetColumns({ tables: [table] }).then((response) => {
+                if (response.status === "ok") {
+                    dispatch(addColumns(response.result[0]));
+                } else {
+                    showToast(response);
+                }
+                dispatch(setHeaderLoading(false));
+            });
+
+            // carico le righe della tabella
+            dbSelect({ [table]: [] }).then((response) => {
+                if (response.status === "ok") {
+                    let rows = response.result.length > 0 ? response.result[0] : [];
+                    dispatch(addRows(rows));
+                } else {
+                    showToast(response);
+                }
+                dispatch(setBodyLoading(false));
+            });
+        }
+        else {
             dispatch(setHeaderLoading(false));
-        });
-
-        // carico le righe della tabella
-        dbSelect({ [table]: [] }).then((response) => {
-            if (response.status === "ok") {
-                let rows = response.result.length > 0 ? response.result[0] : [];
-                dispatch(addRows(rows));
-            } else {
-                showToast(response);
-            }
             dispatch(setBodyLoading(false));
-        });
+        }
     }, [table]);
 
     // =================================== CHIAVI PRIMARIE ====================================
+    // cerco le chiavi primarie
     useEffect(() => {
-        let array = [];
-        columns.forEach((column) => {
-            if (column.Key == "PRI") {
-                array.push(column.Field);
-            }
-        });
-        setPrimaryKeys(array);
+        if (columns.length > 0) {
+            let tmp = [];
+            columns.forEach((column) => {
+                if (column.Key == "PRI") {
+                    tmp.push(column.Field);
+                }
+            });
+            dispatch(setPrimaryKeys(tmp));
+        }
     }, [columns]);
 
     // ===================================== AGGIORNAMENTO ====================================
+    // gestire l'update
     const handleUpdate = (row) => {
         setUpdatingRow(row);
     };
 
+    // gestire l'input change
     const handleInputChange = (e) => {
         const { value, name } = e.target;
         setUpdatingRow({ ...updatingRow, [name]: value });
@@ -78,19 +95,28 @@ function CustomTable({ table, onOpen, showToast, numericType }) {
 
     // confermare la modifica
     const confirmUpdate = () => {
-        const { [primaryKeys[0]]: _, ...object } = updatingRow;
-        let newObject = {
+        let updatedRow = {};
+
+        // aggiungo ad updatedRow solo i campi che non sono null e non sono delle chiavi primarie
+        for (const field in updatingRow) {
+            if (updatingRow[field] !== null && field !== primaryKeys[0]) {
+                updatedRow[field] = updatingRow[field];
+            }
+        }
+
+        // inizializzo l'oggetto da passare a dbUpdate()
+        const object = {
             [table]: [
                 [
                     {
                         [primaryKeys[0]]: updatingRow[primaryKeys[0]],
                     },
-                    [object][0],
+                    updatedRow,
                 ],
             ],
         };
 
-        dbUpdate(newObject).then((response) => {
+        dbUpdate(object).then((response) => {
             if (response.status === "ok") {
                 dispatch(updateRow({ fieldName: primaryKeys[0], object: updatingRow }));
                 setUpdatingRow(null);

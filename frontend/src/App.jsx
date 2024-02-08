@@ -1,21 +1,22 @@
-import React from "react";
-import { useState } from "react";
-import { useDisclosure } from "@nextui-org/react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { setTable } from "./redux/dbSlice";
+import { Button, Input, useDisclosure } from "@nextui-org/react";
 import CustomTable from "./components/CustomTable";
 import CustomFormModal from "./components/CustomFormModal";
 import { ToastContainer, toast } from "react-toastify";
-import { Button, Input } from "@nextui-org/react";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-    // stato del form (se aperto o chiuso)
-    const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    // nome della tabella
-    const [table, setTable] = useState("attori");
-    // tipologie numeriche di dato
-    const numericType = ["int", "decimal", "numeric", "float", "double", "real", "bit", "serial"];
+    // ======================================== REDUX =========================================
+    const table = useSelector((state) => state.database.table);
+    const dispatch = useDispatch();
 
-    // mostrare toast
+    // ====================================== VARIABILI =======================================
+    // stato del form (aperto o chiuso)
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+    // ======================================== TOAST =========================================
     const showToast = (response) => {
         let message = response.message;
         let type = response.status == "ok" ? "success" : "error";
@@ -37,16 +38,17 @@ function App() {
         }
     };
 
+    // ======================================== RETURN ========================================
     return (
         <>
             <div className="flex max-w-60 flex-col gap-4">
                 <Input label="Nome tabella" id="table-name" size="sm" />
-                <Button onPress={() => setTable(document.querySelector("#table-name").value)}>Carica</Button>
+                <Button onPress={() => dispatch(setTable(document.querySelector("#table-name").value))}>Carica</Button>
             </div>
 
-            <CustomTable table={table} showToast={showToast} onOpen={onOpen} numericType={numericType}></CustomTable>
+            <CustomFormModal showToast={showToast} isOpen={isOpen} onOpenChange={onOpenChange}></CustomFormModal>
 
-            <CustomFormModal table={table} showToast={showToast} isOpen={isOpen} onOpenChange={onOpenChange} numericType={numericType}></CustomFormModal>
+            <CustomTable showToast={showToast} onOpen={onOpen}></CustomTable>
 
             <ToastContainer position="bottom-right" autoClose={4000} pauseOnFocusLoss={false} hideProgressBar stacked theme="dark" />
         </>

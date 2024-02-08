@@ -1,48 +1,45 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addRow } from "../redux/rowsSlice";
-import { addField, resetField, resetFields } from "../redux/formSlice";
-import { dbInsert } from "../database";
+import { addField, resetFields, deleteAllFields } from "../redux/formSlice";
+import { dbInsert, dbGetLastId } from "../database";
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Spinner } from "@nextui-org/react";
 
-function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }) {
+function CustomFormModal({ isOpen, onOpenChange, showToast }) {
     // ======================================== REDUX =========================================
+    const database = useSelector((state) => state.database);
+    const table = database.table;
+    const primaryKeys = database.primaryKeys;
+    const numericType = database.numericTypes;
     const columns = useSelector((state) => state.columns.values);
+    const rows = useSelector((state) => state.rows.values);
     const loading = useSelector((state) => state.loading.values);
     const form = useSelector((state) => state.form.values);
     const dispatch = useDispatch();
 
-    // ====================================== VARIABILI =======================================
-    // chiavi primarie della tabella
-    const [primaryKeys, setPrimaryKeys] = useState([]);
-
-    // =================================== CHIAVI PRIMARIE ====================================
+    // =================================== CARICAMENTO INPUT ==================================
     useEffect(() => {
-        let array = [];
-        columns.forEach((column) => {
-            if (column.Key == "PRI") {
-                array.push(column.Field);
-            }
-        });
-        setPrimaryKeys(array);
+        dispatch(deleteAllFields());
     }, [columns]);
+
+    // ================================= CARICAMENTO ULTIMO ID ================================
+    useEffect(() => {
+        if (primaryKeys[0] !== "undefined" && primaryKeys.length > 0) {
+            let object = {
+                tables: [table],
+            };
+            dbGetLastId(object).then((response) => {
+                const lastId = parseInt(response.result[0][0][primaryKeys[0]]);
+                dispatch(addField({ fieldName: primaryKeys[0], fieldValue: lastId + 1 }));
+            });
+        }
+    }, [rows, primaryKeys]);
 
     // ================================== AGGIORNAMENTO INPUT =================================
     function handleInputChange(e) {
         const { value, name } = e.target;
         dispatch(addField({ fieldName: name, fieldValue: value }));
     }
-
-    // =================================== CARICAMENTO INPUT ==================================
-    useEffect(() => {
-        columns.forEach((column) => {
-            if (primaryKeys[0] === column.Field) {
-                dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
-            } else {
-                dispatch(addField({ fieldName: column.Field, fieldValue: "" }));
-            }
-        });
-    }, [columns]);
 
     // ====================================== INSERIMENTO =====================================
     function handleSubmit() {
@@ -69,7 +66,7 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }
 
     // ======================================== RESET =========================================
     function handleReset() {
-        dispatch(resetFields());
+        dispatch(resetFields(primaryKeys));
     }
 
     // ======================================== RETURN ========================================
@@ -86,16 +83,14 @@ function CustomFormModal({ table, isOpen, onOpenChange, showToast, numericType }
                                 columns.map((column) => (
                                     <Input
                                         key={column.Field}
-                                        label={column.Field}
                                         name={column.Field}
+                                        label={column.Field}
                                         type={numericType.some((type) => column.Type.includes(type)) ? "number" : "text"}
+                                        value={form[column.Field]}
                                         isRequired={column.Null === "YES" ? false : true}
                                         isReadOnly={primaryKeys[0] === column.Field ? true : false}
-                                        {...(primaryKeys[0] === column.Field ? "isClearable" : "")}
-                                        value={form[column.Field]}
-                                        variant="bordered"
                                         onChange={handleInputChange}
-                                        onClear={primaryKeys[0] === column.Field ? "" : () => dispatch(resetField(column.Field))}
+                                        variant="bordered"
                                     />
                                 ))
                             )}

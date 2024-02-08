@@ -56,4 +56,15 @@ async function dbGetColumns(object) {
     return json;
 }
 
-export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns };
+// get last id
+async function dbGetLastId(object) {
+    let response = await fetch(`http://${host}/api/getlastid.php`, {
+        method: "POST",
+        "Content-Type": "application/json",
+        body: JSON.stringify(object),
+    });
+    let json = await response.json();
+    return json;
+}
+
+export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns, dbGetLastId };
