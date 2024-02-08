@@ -1,46 +1,11 @@
 <?php
-/*
-// =================================================================================================
-DATABASE.PHP
-
-Questo file contiene alcune funzioni che permettono di effettuare le principali operazioni per la gestione di un database (insert, update, delete).
-La maggior parte delle seguenti funzioni richiedono come parametro un oggetto, le cui proprietà corrispondono al nome, ai campi e ai valori delle tabelle del database.
-
-Per semplificare la creazione di questi oggetti, si consiglia di effettuare una conversione di file JSON, nel seguente modo:
-
-$json = file_get_contents("example.json");
-$object = json_decode($json);
-
-
-Il seguente è un esempio del contenuto del file JSON:
-
-{
-    "customers": [
-        {
-            "name": "Mario",
-            "surname": "Rossi",
-            "email": "mario@example.com"
-        },
-        {
-            "name": "Giovanni",
-            "surname": "Verdi",
-            "email": "giovanni@example.com"
-        }
-    ]
-}
-
-"customers" è il nome della tabella, mentre "name", "surname" e "email" sono i suoi campi.
-
-// =================================================================================================
-*/
-
+include "response.php";
 
 // =========================================== DATABASE ============================================
 class Database {
     // ========================================= VARIABILI =========================================
 
     public $conn;
-    public $error;
 
 
     // ======================================== COSTRUTTORE ========================================
@@ -49,7 +14,7 @@ class Database {
         try {
             $this->conn = @new mysqli($host, $username, $password, $database, $port);
         } catch (Exception $e) {
-            $this->error = $e->getMessage();
+            throw new Exception($e->getMessage());
         }
     }
 
@@ -59,8 +24,6 @@ class Database {
     public function insert($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // risposta
-        $message = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -81,8 +44,7 @@ class Database {
                     foreach ($record as $field => $value) {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
-                            $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, "'$field: $value' contains a space character");
                         }
 
                         // aggiungo i nomi e i valori dei campi nei rispettivi array
@@ -99,8 +61,7 @@ class Database {
                         $diff = array_diff($fields, $local_fields);
                         // controllo se i campi sono diversi o se non sono lo stesso numero
                         if (!empty($diff) || count($fields) != count($local_fields)) {
-                            $message = "Error: Different fields in '$table_name'";
-                            return new Response($message);
+                            return new Response(false, "Different fields in '$table_name'");
                         }
                     }
 
@@ -114,30 +75,35 @@ class Database {
                 // aggiungo la query all'array $queries
                 array_push($queries, $query);
             } else {
-                $message = "Error: Table '$table_name' is empty";
-                return new Response($message);
+                return new Response(false, "Table '$table_name' is empty");
             }
         }
 
         // variabile per il conteggio dei record inseriti
         $inserted = 0;
+        // variabile per salvare gli id dei record inseriti
+        $id = array();
 
         // eseguo tutte le query se non si sono verificati errori
         foreach ($queries as $query) {
             try {
                 $this->conn->query($query);
+                // salvo il numero di righe inserite con la query
+                $affected_rows = $this->conn->affected_rows;
+                // salvo l'id del primo record della query
+                $start_id = $this->conn->insert_id;
                 // incremento il numero di righe inserite
-                $inserted += $this->conn->affected_rows;
+                $inserted += $affected_rows;
+                // salvo ogni id inserito partendo dal primo record della query
+                for ($i = $start_id; $i < $start_id + $affected_rows; $i++) {
+                    array_push($id, $i);
+                }
             } catch (Exception $e) {
-                $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $e->getMessage());
             }
         }
 
-        // creo l'oggetto per la risposta
-        $message = "$inserted records inserted";
-        $response = new Response($message, $queries);
-        return $response;
+        return new Response(true, "$inserted records inserted", $queries, $id);
     }
 
 
@@ -146,8 +112,6 @@ class Database {
     public function delete($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // risposta
-        $message = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -162,8 +126,7 @@ class Database {
                     foreach ($record as $field => $value) {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
-                            $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, "'$field: $value' contains a space character");
                         }
 
                         // aggiungo la stringa delle condizioni nell'array $conditions
@@ -193,15 +156,11 @@ class Database {
                 // ottengo il numero di righe cancellate
                 $deleted += $this->conn->affected_rows;
             } catch (Exception $e) {
-                $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $e->getMessage());
             }
         }
 
-        // creo l'oggetto per la risposta
-        $message = "$deleted records deleted";
-        $response = new Response($message, $queries);
-        return $response;
+        return new Response(true, "$deleted records deleted", $queries);
     }
 
 
@@ -210,8 +169,6 @@ class Database {
     public function update($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // risposta
-        $response = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -230,8 +187,7 @@ class Database {
                     foreach ($new as $field => $value) {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
-                            $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, "'$field: $value' contains a space character");
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -248,8 +204,7 @@ class Database {
                     foreach ($old as $field => $value) {
                         // controllo che non ci siano spazi nei campi, per evitare errori durante l'esecuzione della query
                         if (str_contains($field, " ")) {
-                            $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, "'$field: $value' contains a space character");
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -262,8 +217,7 @@ class Database {
                     // aggiungo la query all'array $queries
                     array_push($queries, $query);
                 } else {
-                    $message = "Error: Table '$table_name' doesn't contain arrays with 2 objects";
-                    return new Response($message);
+                    return new Response(false, "Table '$table_name' doesn't contain arrays with 2 objects");
                 }
             }
         }
@@ -278,15 +232,11 @@ class Database {
                 // ottengo il numero di righe aggiornate
                 $updated += $this->conn->affected_rows;
             } catch (Exception $e) {
-                $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $e->getMessage());
             }
         }
 
-        // creo l'oggetto per la risposta
-        $message = "$updated records updated";
-        $response = new Response($message, $queries);
-        return $response;
+        return new Response(true, "$updated records updated", $queries);
     }
 
 
@@ -295,8 +245,6 @@ class Database {
     public function select($object) {
         // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
         $queries = array();
-        // risposta
-        $response = null;
 
         // scorro l'oggetto $object che contiente le tabelle del db
         foreach ($object as $table_name => $table) {
@@ -316,8 +264,7 @@ class Database {
                     foreach ($fields as $field => $value) {
                         // controllo che non ci siano spazi nei campi
                         if (str_contains($field, " ")) {
-                            $message = "Error: '$field: $value' contains a space character";
-                            return new Response($message);
+                            return new Response(false, "'$field: $value' contains a space character");
                         }
 
                         // aggiungo la stringa delle condizioni all'array $conditions
@@ -360,55 +307,125 @@ class Database {
                     // aggiungo all'array $results il risultato della query come array associativo
                     array_push($results, $result->fetch_all(MYSQLI_ASSOC));
                 }
-
-                // creo l'oggetto per la risposta
-                $message = "$selected records selected";
-                $response = new Response($message, $queries, $results);
             } catch (Exception $e) {
-                $message = "Error: " . $e->getMessage();
-                return new Response($message);
+                return new Response(false, $e->getMessage());
             }
         }
 
-        return $response;
+        return new Response(true, "$selected records selected", $queries, $results);
     }
-}
 
 
-// =========================================== RISPOSTA ============================================
-class Response {
-    // ========================================= VARIABILI =========================================
+    // ================================== SELEZIONE CAMPI TABELLA ==================================
 
-    public $message;
-    public $query;
-    public $result;
+    public function getColumns($object) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
+
+        // controllo che esista l'array tables
+        if (property_exists($object, 'tables')) {
+            // array che contiene i nomi delle tabelle del db dai cui prendere i campi delle colonne
+            $tables = $object->tables;
+
+            // controllo che l'array 'tables' non sia vuoto
+            if (!empty($tables)) {
+                // scorro il vettore $tablse che rappresenta le tabelle del db
+                foreach ($tables as $table_name) {
+                    // controllo che non ci siano spazi nei campi
+                    if (str_contains($table_name, " ")) {
+                        return new Response(false, "'$table_name' contains a space character");
+                    }
+
+                    // aggiungo la query all'array $queries
+                    $query = "SHOW COLUMNS FROM $table_name";
+                    array_push($queries, $query);
+                }
+            } else {
+                return new Response(false, "'tables' does not contain any table name");
+            }
 
 
-    // ======================================== COSTRUTTORI ========================================
-    public function __construct() {
-        $arguments = func_get_args();
-        $num_arguments = func_num_args();
+            // array che contiene i risultati delle query
+            $results = array();
 
-        if (method_exists($this, $function = '__construct' . $num_arguments)) {
-            call_user_func_array(array($this, $function), $arguments);
+            // eseguo tutte le query se non si sono verificati errori
+            foreach ($queries as $query) {
+                try {
+                    // salvo in result il risultato della query
+                    $result = $this->conn->query($query);
+
+                    // aggiungo all'array $results il risultato della query come array associativo
+                    array_push($results, $result->fetch_all(MYSQLI_ASSOC));
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+
+            return new Response(true, "Got columns of " . count($results) . " tables ", $queries, $results);
+        } else {
+            return new Response(false, "JSON does not contain array 'tables'");
         }
     }
 
-    public function __construct1($message) {
-        $this->message = $message;
-        $this->query = null;
-        $this->result = null;
-    }
 
-    public function __construct2($message, $query) {
-        $this->message = $message;
-        $this->query = $query;
-        $this->result = null;
-    }
+    // ==================================== SELEZIONE ULTIMO ID ====================================
 
-    public function __construct3($message, $query, $result) {
-        $this->message = $message;
-        $this->query = $query;
-        $this->result = $result;
+    public function getLastId($object, $database_name) {
+        // array delle query da eseguire (le query vengono eseguite solo alla fine, se non sono stati rilevati errori durante l'esecuzione)
+        $queries = array();
+
+        // controllo che esista l'array tables
+        if (property_exists($object, 'tables')) {
+            // array che contiene i nomi delle tabelle del db dai cui prendere i valore massimi
+            $tables = $object->tables;
+
+            // controllo che l'array tables non sia vuoto
+            if (!empty($tables)) {
+                // scorro il vettore $tables che rappresenta le tabelle del db
+                foreach ($tables as $table_name) {
+                    // controllo che non ci siano spazi nei campi
+                    if (str_contains($table_name, " ")) {
+                        return new Response(false, "'$table_name' contains a space character");
+                    }
+
+                    try {
+                        // ottengo i nomi delle colonne che contengono le chiavi primarie
+                        $keys = $this->conn->query("SELECT column_name FROM information_schema.columns WHERE table_schema = '$database_name' AND table_name = '$table_name' AND COLUMN_KEY = 'PRI'");
+                        $keys = $keys->fetch_all(MYSQLI_ASSOC);
+
+                        foreach ($keys as $key) {
+                            // aggiungo all'array $queries la query per ottenere il maggior valore della chiave primaria
+                            $query = "SELECT MAX({$key["column_name"]}) AS {$key["column_name"]} FROM $table_name";
+                            array_push($queries, $query);
+                        }
+                    } catch (Exception $e) {
+                        return new Response(false, $e->getMessage());
+                    }
+                }
+            } else {
+                return new Response(false, "'tables' does not contain any table name");
+            }
+
+            // array che contiene i risultati delle query
+            $results = array();
+
+            // eseguo tutte le query se non si sono verificati errori
+            foreach ($queries as $query) {
+                try {
+                    // eseguo la query per ottene l'ultimo id di ogni colonna 
+                    $result = $this->conn->query($query);
+                    $result = $result->fetch_all(MYSQLI_ASSOC);
+
+                    // prendo i valori e li salvo come oggetti
+                    array_push($results, $result);
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+
+            return new Response(true, "Got last id of " . count($results) . " columns ", $queries, $results);
+        } else {
+            return new Response(false, "JSON does not contain array 'tables'");
+        }
     }
 }
