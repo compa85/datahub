@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { loadTable, setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
 import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
-import { addRows, updateRow, deleteRow, deleteAllRows } from "../redux/rowsSlice";
+import { addRows, updateRow, deleteRow, deleteRows, deleteAllRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
 import { dbSelect, dbDelete, dbUpdate, dbGetColumns } from "../database";
 import { Button, Chip, Input, Spinner, Table, TableHeader, TableBody, TableColumn, TableRow, TableCell, Tooltip, getKeyValue } from "@nextui-org/react";
@@ -23,6 +23,8 @@ function CustomTable({ onOpen, showToast }) {
     // ====================================== VARIABILI =======================================
     // riga da modificare
     const [updatingRow, setUpdatingRow] = useState(null);
+    // righe selezionate
+    const [selectedRows, setSelectedRows] = useState(new Set([]));
 
     // ================================== CARICAMENTO TABELLA =================================
     useEffect(() => {
@@ -33,13 +35,14 @@ function CustomTable({ onOpen, showToast }) {
         dispatch(deleteAllColumns());
         dispatch(deleteAllRows());
         dispatch(deleteAllPrimaryKeys());
-        // reimposto updatingRow
+        // reimposto updatingRow e selectedRows
         setUpdatingRow(null);
+        setSelectedRows(new Set([]));
         // carico il valore di table salvato nel local storage
         dispatch(loadTable());
 
         // controllo che sia presente un nome della tabella
-        if ((table !== null) && (table !== "")) {
+        if (table !== null && table !== "") {
             // carico le colonne della tabella
             dbGetColumns({ tables: [table] }).then((response) => {
                 if (response.status === "ok") {
@@ -53,15 +56,13 @@ function CustomTable({ onOpen, showToast }) {
             // carico le righe della tabella
             dbSelect({ [table]: [] }).then((response) => {
                 if (response.status === "ok") {
-                    let rows = response.result.length > 0 ? response.result[0] : [];
-                    dispatch(addRows(rows));
+                    dispatch(addRows(response.result[0]));
                 } else {
                     showToast(response);
                 }
                 dispatch(setBodyLoading(false));
             });
-        }
-        else {
+        } else {
             dispatch(setHeaderLoading(false));
             dispatch(setBodyLoading(false));
         }
@@ -116,9 +117,12 @@ function CustomTable({ onOpen, showToast }) {
             ],
         };
 
+        // aggiorno le righe del db
         dbUpdate(object).then((response) => {
             if (response.status === "ok") {
-                dispatch(updateRow({ fieldName: primaryKeys[0], object: updatingRow }));
+                // aggiorno le righe della tabella
+                dispatch(updateRow(object[table][0]));
+                // rispristino lo stato della riga da modificare
                 setUpdatingRow(null);
             }
             showToast(response);
@@ -132,17 +136,36 @@ function CustomTable({ onOpen, showToast }) {
 
     // ===================================== ELIMINAZIONE =====================================
     const handleDelete = (id) => {
+        // flag per resettare lo stato di selectedRows
+        let resettable = true;
+
         const object = {
-            [table]: [
-                {
-                    [primaryKeys[0]]: id,
-                },
-            ],
+            [table]: [],
         };
 
+        // controllo se sono selezionate tutte le righe
+        if (selectedRows === "all") {
+            dispatch(deleteAllRows());
+        }
+        // controllo se ci sono più righe selezionate
+        else if (selectedRows.size > 0 && selectedRows.has(id)) {
+            for (const key of selectedRows) {
+                object[table].push({ [primaryKeys[0]]: key });
+            }
+        } else {
+            object[table].push({ [primaryKeys[0]]: id });
+            resettable = false;
+        }
+
+        // elimino le righe dal db
         dbDelete(object).then((response) => {
             if (response.status === "ok") {
-                dispatch(deleteRow({ fieldName: primaryKeys[0], fieldValue: [id] }));
+                // elimino le righe dalla tabella
+                dispatch(deleteRows(object[table]));
+                if (resettable) {
+                    // rispristino lo stato delle righe selezionate
+                    setSelectedRows(new Set([]));
+                }
             }
             showToast(response);
         });
@@ -160,9 +183,15 @@ function CustomTable({ onOpen, showToast }) {
             <Table
                 aria-label="Tabella"
                 isHeaderSticky
+                selectionMode="multiple"
+                selectedKeys={selectedRows}
+                onSelectionChange={setSelectedRows}
                 classNames={{
                     base: "max-h-[65vh] overflow-scroll",
                     table: "min-h-[400px]",
+                }}
+                onCellAction={() => {
+                    /* evitare di selezionare la riga cliccando sugli input */
                 }}
             >
                 <TableHeader>
@@ -184,13 +213,13 @@ function CustomTable({ onOpen, showToast }) {
                     )}
                 </TableHeader>
                 <TableBody isLoading={loading.body} loadingContent={<Spinner label="Caricamento..." />} emptyContent={loading.body === true ? "" : "Nessuna riga da visualizzare"}>
-                    {rows.map((item, index) => (
-                        <TableRow key={primaryKeys.length > 0 ? item[primaryKeys[0]] : index}>
+                    {rows.map((row, index) => (
+                        <TableRow key={primaryKeys.length > 0 ? row[primaryKeys[0]] : index}>
                             {(columnKey) => (
                                 <TableCell>
                                     {columnKey == "Azioni" ? (
                                         <div className="relative flex items-center">
-                                            {updatingRow != null && updatingRow[primaryKeys[0]] === item[primaryKeys[0]] ? (
+                                            {updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? (
                                                 <>
                                                     <Button isIconOnly className="bg-transparent" onPress={() => confirmUpdate()}>
                                                         <FontAwesomeIcon icon={faCheck} className="text-success text-lg" />
@@ -201,10 +230,10 @@ function CustomTable({ onOpen, showToast }) {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Button isIconOnly className="bg-transparent" onPress={() => handleUpdate(item)}>
+                                                    <Button isIconOnly className="bg-transparent" onPress={() => handleUpdate(row)}>
                                                         <FontAwesomeIcon icon={faPenToSquare} className="text-default-400" />
                                                     </Button>
-                                                    <Button isIconOnly text-danger className="bg-transparent" onPress={() => handleDelete(item[primaryKeys[0]])}>
+                                                    <Button isIconOnly text-danger className="bg-transparent" onPress={() => handleDelete(row[primaryKeys[0]])}>
                                                         <FontAwesomeIcon icon={faTrash} className="text-danger" />
                                                     </Button>
                                                 </>
@@ -214,17 +243,18 @@ function CustomTable({ onOpen, showToast }) {
                                         <Input
                                             name={columnKey}
                                             type={numericType.some((type) => columns.some((c) => c.Field === columnKey && c.Type.includes(type))) ? "number" : "text"}
-                                            isReadOnly={updatingRow != null && updatingRow[primaryKeys[0]] === item[primaryKeys[0]] && columnKey != primaryKeys[0] ? false : true}
+                                            isReadOnly={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] && columnKey != primaryKeys[0] ? false : true}
                                             value={
-                                                updatingRow !== null && updatingRow[primaryKeys[0]] === item[primaryKeys[0]]
+                                                updatingRow !== null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]]
                                                     ? updatingRow[columnKey]
-                                                    : getKeyValue(item, columnKey) != null
-                                                      ? getKeyValue(item, columnKey)
+                                                    : getKeyValue(row, columnKey) != null
+                                                      ? getKeyValue(row, columnKey)
                                                       : ""
                                             }
-                                            variant={updatingRow != null && updatingRow[primaryKeys[0]] === item[primaryKeys[0]] ? "faded" : "bordered"}
+                                            variant={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? "faded" : "bordered"}
                                             size="sm"
                                             onChange={(e) => handleInputChange(e)}
+                                            onClick={(e) => e.stopPropagation()}
                                         />
                                     )}
                                 </TableCell>

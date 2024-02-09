@@ -25,11 +25,15 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
     // ================================= CARICAMENTO ULTIMO ID ================================
     useEffect(() => {
         if (primaryKeys[0] !== "undefined" && primaryKeys.length > 0) {
+            // inizializzo l'oggetto da passare a dbGetLastId()
             let object = {
                 tables: [table],
             };
+
+            // ottengo l'ultimo id dal db
             dbGetLastId(object).then((response) => {
                 const lastId = parseInt(response.result[0][0][primaryKeys[0]]);
+                // aggiungo il campo con l'id al form
                 dispatch(addField({ fieldName: primaryKeys[0], fieldValue: lastId + 1 }));
             });
         }
@@ -43,22 +47,33 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
 
     // ====================================== INSERIMENTO =====================================
     function handleSubmit() {
-        let object = {};
+        // inizializzo l'oggetto da passare a dbInsert()
+        let object = {
+            [table]: [{}],
+        };
 
         for (const field in form) {
-            if (form[field] !== "") {
-                object[field] = form[field];
+            if (form[field] !== "" && form[field]!==primaryKeys[0]) {
+                object[table][0][field] = form[field];
             }
         }
 
-        dbInsert({ [table]: [object] }).then((response) => {
+        // inserisco la riga nel db
+        dbInsert(object).then((response) => {
             if (response.status === "ok") {
+                // ottengo l'ultimo id
+                const lastId = response.result[0];
+
+                // aggiungo l'id come attributo dell'oggetto da inserire nella tabella
                 object = {
-                    ...object,
-                    [primaryKeys[0]]: String(response.result[0]),
+                    ...object[table][0],
+                    [primaryKeys[0]]: lastId,
                 };
+
+                // inserisco la riga nella tabella
                 dispatch(addRow(object));
-                dispatch(resetFields());
+                // resetto gli input
+                dispatch(resetFields(primaryKeys));
             }
             showToast(response);
         });
