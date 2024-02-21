@@ -17,9 +17,6 @@ export const dbSlice = createSlice({
             state.table = action.payload;
             localStorage.setItem("table", state.table);
         },
-        loadTable: (state, action) => {
-            state.table = localStorage.getItem("table") !== null ? localStorage.getItem("table") : "";
-        },
         addPrimaryKey: (state, action) => {
             state.primaryKeys.push(action.payload);
         },
@@ -32,5 +29,5 @@ export const dbSlice = createSlice({
     },
 });
 
-export const { setHost, setTable, loadTable, addPrimaryKey, setPrimaryKeys, deleteAllPrimaryKeys } = dbSlice.actions;
+export const { setHost, setTable, addPrimaryKey, setPrimaryKeys, deleteAllPrimaryKeys } = dbSlice.actions;
 export const dbReducer = dbSlice.reducer;
