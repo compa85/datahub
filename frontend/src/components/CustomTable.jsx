@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { loadTable, setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
 import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
-import { addRows, updateRow, deleteRow, deleteRows, deleteAllRows } from "../redux/rowsSlice";
+import { addRows, updateRow, deleteRows, deleteAllRows, sortRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
 import { dbSelect, dbDelete, dbUpdate, dbGetColumns } from "../database";
 import { Button, Chip, Input, Spinner, Table, TableHeader, TableBody, TableColumn, TableRow, TableCell, Tooltip, getKeyValue } from "@nextui-org/react";
@@ -79,6 +79,7 @@ function CustomTable({ onOpen, showToast }) {
                 }
             });
             dispatch(setPrimaryKeys(tmp));
+            dispatch(sortRows({ column: tmp[0] }));
         }
     }, [columns]);
 
@@ -193,6 +194,9 @@ function CustomTable({ onOpen, showToast }) {
                 onCellAction={() => {
                     /* evitare di selezionare la riga cliccando sugli input */
                 }}
+                onSortChange={(e) => dispatch(sortRows(e))}
+                bottomContent={<span className="text-small text-default-400 w-[30%]">{selectedRows === "all" ? "Selezionati tutti" : `${selectedRows.size} di ${rows.length} selezionati`}</span>}
+                bottomContentPlacement="outside"
             >
                 <TableHeader>
                     {loading.header ? (
@@ -200,7 +204,7 @@ function CustomTable({ onOpen, showToast }) {
                     ) : (
                         [
                             columns.map((column) => (
-                                <TableColumn key={column.Field}>
+                                <TableColumn key={column.Field} allowsSorting>
                                     <Tooltip content={column.Type} placement="top">
                                         <Chip className="cursor-pointer bg-transparent">{column.Field}</Chip>
                                     </Tooltip>
@@ -248,8 +252,8 @@ function CustomTable({ onOpen, showToast }) {
                                                 updatingRow !== null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]]
                                                     ? updatingRow[columnKey]
                                                     : getKeyValue(row, columnKey) != null
-                                                      ? getKeyValue(row, columnKey)
-                                                      : ""
+                                                    ? getKeyValue(row, columnKey)
+                                                    : ""
                                             }
                                             variant={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? "faded" : "bordered"}
                                             size="sm"
