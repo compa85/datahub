@@ -1,70 +1,51 @@
-// variabili
-const host = "localhost:3001";
+import store from "./redux/store";
+
+// fetch api
+async function fetchApi(action, object) {
+    const host = store.getState().database.host;
+
+    try {
+        let response = await fetch(`http://${host}/api/${action}.php`, {
+            method: "POST",
+            "Content-Type": "application/json",
+            body: JSON.stringify(object),
+        });
+
+        let json = await response.json();
+        return json;
+    } catch (error) {
+        return { status: "error", message: "Failed to fetch", query: null, result: null };
+    }
+}
 
 // select
 async function dbSelect(object) {
-    let response = await fetch(`http://${host}/api/select.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("select", object);
 }
 
 // insert
 async function dbInsert(object) {
-    let response = await fetch(`http://${host}/api/insert.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("insert", object);
 }
 
 // update
 async function dbUpdate(object) {
-    let response = await fetch(`http://${host}/api/update.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("update", object);
 }
 
 // delete
 async function dbDelete(object) {
-    let response = await fetch(`http://${host}/api/delete.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("delete", object);
 }
 
 // get columns
 async function dbGetColumns(object) {
-    let response = await fetch(`http://${host}/api/getcolumns.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("getcolumns", object);
 }
 
 // get last id
 async function dbGetLastId(object) {
-    let response = await fetch(`http://${host}/api/getlastid.php`, {
-        method: "POST",
-        "Content-Type": "application/json",
-        body: JSON.stringify(object),
-    });
-    let json = await response.json();
-    return json;
+    return await fetchApi("getlastid", object);
 }
 
 export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns, dbGetLastId };

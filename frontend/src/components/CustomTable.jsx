@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { loadTable, setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
+import { setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
 import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
 import { addRows, updateRow, deleteRows, deleteAllRows, sortRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
@@ -12,6 +12,7 @@ import { faPenToSquare, faTrash, faPlus, faCheck, faXmark } from "@fortawesome/f
 function CustomTable({ onOpen, showToast }) {
     // ======================================== REDUX =========================================
     const database = useSelector((state) => state.database);
+    const host = database.host;
     const table = database.table;
     const primaryKeys = database.primaryKeys;
     const numericType = database.numericTypes;
@@ -38,8 +39,6 @@ function CustomTable({ onOpen, showToast }) {
         // reimposto updatingRow e selectedRows
         setUpdatingRow(null);
         setSelectedRows(new Set([]));
-        // carico il valore di table salvato nel local storage
-        dispatch(loadTable());
 
         // controllo che sia presente un nome della tabella
         if (table !== null && table !== "") {
@@ -66,7 +65,7 @@ function CustomTable({ onOpen, showToast }) {
             dispatch(setHeaderLoading(false));
             dispatch(setBodyLoading(false));
         }
-    }, [table]);
+    }, [host, table]);
 
     // =================================== CHIAVI PRIMARIE ====================================
     // cerco le chiavi primarie
@@ -198,74 +197,79 @@ function CustomTable({ onOpen, showToast }) {
                 bottomContent={<span className="text-small text-default-400 w-[30%]">{selectedRows === "all" ? "Selezionati tutti" : `${selectedRows.size} di ${rows.length} selezionati`}</span>}
                 bottomContentPlacement="outside"
             >
-                <TableHeader>
-                    {loading.header ? (
-                        <TableColumn>Caricamento...</TableColumn>
-                    ) : (
-                        [
-                            columns.map((column) => (
-                                <TableColumn key={column.Field} allowsSorting>
-                                    <Tooltip content={column.Type} placement="top">
-                                        <Chip className="cursor-pointer bg-transparent">{column.Field}</Chip>
-                                    </Tooltip>
-                                </TableColumn>
-                            )),
-                            <TableColumn key="Azioni">
-                                <Chip className="cursor-pointer bg-transparent">Azioni</Chip>
-                            </TableColumn>,
-                        ]
-                    )}
-                </TableHeader>
-                <TableBody isLoading={loading.body} loadingContent={<Spinner label="Caricamento..." />} emptyContent={loading.body === true ? "" : "Nessuna riga da visualizzare"}>
-                    {rows.map((row, index) => (
-                        <TableRow key={primaryKeys.length > 0 ? row[primaryKeys[0]] : index}>
-                            {(columnKey) => (
-                                <TableCell>
-                                    {columnKey == "Azioni" ? (
-                                        <div className="relative flex items-center">
-                                            {updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? (
-                                                <>
-                                                    <Button isIconOnly className="bg-transparent" onPress={() => confirmUpdate()}>
-                                                        <FontAwesomeIcon icon={faCheck} className="text-success text-lg" />
-                                                    </Button>
-                                                    <Button isIconOnly text-danger className="bg-transparent" onPress={() => discardUpdate()}>
-                                                        <FontAwesomeIcon icon={faXmark} className="text-danger text-lg" />
-                                                    </Button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Button isIconOnly className="bg-transparent" onPress={() => handleUpdate(row)}>
-                                                        <FontAwesomeIcon icon={faPenToSquare} className="text-default-400" />
-                                                    </Button>
-                                                    <Button isIconOnly text-danger className="bg-transparent" onPress={() => handleDelete(row[primaryKeys[0]])}>
-                                                        <FontAwesomeIcon icon={faTrash} className="text-danger" />
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <Input
-                                            name={columnKey}
-                                            type={numericType.some((type) => columns.some((c) => c.Field === columnKey && c.Type.includes(type))) ? "number" : "text"}
-                                            isReadOnly={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] && columnKey != primaryKeys[0] ? false : true}
-                                            value={
-                                                updatingRow !== null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]]
-                                                    ? updatingRow[columnKey]
-                                                    : getKeyValue(row, columnKey) != null
-                                                    ? getKeyValue(row, columnKey)
-                                                    : ""
-                                            }
-                                            variant={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? "faded" : "bordered"}
-                                            size="sm"
-                                            onChange={(e) => handleInputChange(e)}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    )}
-                                </TableCell>
-                            )}
-                        </TableRow>
-                    ))}
-                </TableBody>
+                {loading.header === true ? (
+                    <TableHeader>
+                        <TableColumn></TableColumn>
+                    </TableHeader>
+                ) : (
+                    <TableHeader>
+                        {columns.map((column) => (
+                            <TableColumn key={column.Field} allowsSorting>
+                                <Tooltip content={column.Type} placement="top">
+                                    <Chip className="cursor-pointer bg-transparent">{column.Field}</Chip>
+                                </Tooltip>
+                            </TableColumn>
+                        ))}
+                        <TableColumn key="Azioni">
+                            <Chip className="cursor-pointer bg-transparent">Azioni</Chip>
+                        </TableColumn>
+                    </TableHeader>
+                )}
+
+                {loading.body ? (
+                    <TableBody isLoading={loading.body} loadingContent={<Spinner label="Caricamento..." />}></TableBody>
+                ) : (
+                    <TableBody emptyContent={"Nessuna riga da visualizzare"}>
+                        {rows.map((row, index) => (
+                            <TableRow key={primaryKeys.length > 0 ? row[primaryKeys[0]] : index}>
+                                {(columnKey) => (
+                                    <TableCell>
+                                        {columnKey == "Azioni" ? (
+                                            <div className="relative flex items-center">
+                                                {updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? (
+                                                    <>
+                                                        <Button isIconOnly className="bg-transparent" onPress={() => confirmUpdate()}>
+                                                            <FontAwesomeIcon icon={faCheck} className="text-success text-lg" />
+                                                        </Button>
+                                                        <Button isIconOnly text-danger className="bg-transparent" onPress={() => discardUpdate()}>
+                                                            <FontAwesomeIcon icon={faXmark} className="text-danger text-lg" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Button isIconOnly className="bg-transparent" onPress={() => handleUpdate(row)}>
+                                                            <FontAwesomeIcon icon={faPenToSquare} className="text-default-400" />
+                                                        </Button>
+                                                        <Button isIconOnly text-danger className="bg-transparent" onPress={() => handleDelete(row[primaryKeys[0]])}>
+                                                            <FontAwesomeIcon icon={faTrash} className="text-danger" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <Input
+                                                name={columnKey}
+                                                type={numericType.some((type) => columns.some((c) => c.Field === columnKey && c.Type.includes(type))) ? "number" : "text"}
+                                                isReadOnly={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] && columnKey != primaryKeys[0] ? false : true}
+                                                value={
+                                                    updatingRow !== null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]]
+                                                        ? updatingRow[columnKey]
+                                                        : getKeyValue(row, columnKey) != null
+                                                        ? getKeyValue(row, columnKey)
+                                                        : ""
+                                                }
+                                                variant={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? "faded" : "bordered"}
+                                                size="sm"
+                                                onChange={(e) => handleInputChange(e)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        )}
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                )}
             </Table>
         </>
     );
