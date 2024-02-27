@@ -62,7 +62,7 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
         dbInsert(object).then((response) => {
             if (response.status === "ok") {
                 // ottengo l'ultimo id
-                const lastId = response.result[0];
+                const lastId = String(response.result[0]);
 
                 // aggiungo l'id come attributo dell'oggetto da inserire nella tabella
                 object = {
