@@ -1,7 +1,8 @@
 import React, { useEffect, useReducer } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { setHost, setTable } from "./redux/dbSlice";
-import { Button, Input, useDisclosure } from "@nextui-org/react";
+import { setHost, setTable, setTablesName, deleteTablesName } from "./redux/dbSlice";
+import { Button, Input, useDisclosure, Autocomplete, AutocompleteItem } from "@nextui-org/react";
+import { dbGetTables } from "./database.js";
 import CustomTable from "./components/CustomTable";
 import CustomFormModal from "./components/CustomFormModal";
 import { ToastContainer, toast } from "react-toastify";
@@ -19,6 +20,7 @@ function App() {
     const database = useSelector((state) => state.database);
     const host = database.host;
     const table = database.table;
+    const tablesName = database.tablesName;
     const dispatch = useDispatch();
 
     // ====================================== VARIABILI =======================================
@@ -42,7 +44,14 @@ function App() {
     useEffect(() => {
         if (host != "") {
             dispatchForm({ type: "CHANGE_HOST", value: host });
+            dispatch(deleteTablesName());
         }
+
+        dbGetTables().then((response) => {
+            if (response.status === "ok") {
+                dispatch(setTablesName(response.result));
+            }
+        });
     }, [host]);
 
     useEffect(() => {
@@ -118,10 +127,25 @@ function App() {
                 </form>
 
                 <form className="flex max-w-60 flex-col gap-4">
-                    <Input id="table-input" label="Nome tabella" value={form.table} onChange={handleChange} size="sm" />
-                    <Button type="submit" id="table-button" onClick={handleSubmit}>
-                        Carica
-                    </Button>
+                    <Autocomplete
+                        label="Nome Tabella"
+                        placeholder="Cerca una tabella"
+                        className="max-w-xs"
+                        selectedKey={table}
+                        isClearable
+                        listboxProps={{
+                            emptyContent: `Nessun riscontro`,
+                        }}
+                        onSelectionChange={(key) => {
+                            key === null ? dispatch(setTable("")) : dispatch(setTable(key));
+                        }}
+                    >
+                        {tablesName.map((tablename) => (
+                            <AutocompleteItem key={tablename} value={tablename}>
+                                {tablename}
+                            </AutocompleteItem>
+                        ))}
+                    </Autocomplete>
                 </form>
             </div>
 

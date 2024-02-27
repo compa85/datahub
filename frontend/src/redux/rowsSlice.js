@@ -94,11 +94,24 @@ export const rowsSlice = createSlice({
             // .slice() prende ogni elemento dell'array se non riceve parametri
             // .sort() prende due elementi alla volta e ordina i due (con bubble sort) in modo crescente
             state.values = state.values.slice().sort((a, b) => {
-                let first = a[state.sortDescriptor.column];
-                let second = b[state.sortDescriptor.column];
+                let first = a[state.sortDescriptor.column] === null ? a[state.sortDescriptor.column] : parseInt(a[state.sortDescriptor.column]) || a[state.sortDescriptor.column].toLowerCase();
+                let second = b[state.sortDescriptor.column] === null ? b[state.sortDescriptor.column] : parseInt(b[state.sortDescriptor.column]) || b[state.sortDescriptor.column].toLowerCase();
 
                 // confronto i due valori a e b; cmp = (1 se a > b; -1 se a < b: 0 se a = b)
-                let cmp = (parseInt(first) || first) < (parseInt(second) || second) ? -1 : (parseInt(first) || first) > (parseInt(second) || second) ? 1 : 0;
+                let cmp =
+                    first === null
+                        ? -1
+                        : second === null
+                        ? 1
+                        : typeof first === "number" && typeof second !== "number"
+                        ? -1
+                        : typeof first !== "number" && typeof second === "number"
+                        ? 1
+                        : first > second
+                        ? 1
+                        : first < second
+                        ? -1
+                        : 0;
 
                 // inverto posizione se ordine decrescente
                 if (state.sortDescriptor.direction === "descending") {
