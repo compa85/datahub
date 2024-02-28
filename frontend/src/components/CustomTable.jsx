@@ -18,6 +18,7 @@ function CustomTable({ onOpen, showToast }) {
     const numericTypes = database.numericTypes;
     const columns = useSelector((state) => state.columns.values);
     const rows = useSelector((state) => state.rows.values);
+    const sortDescriptor = useSelector((state) => state.rows.sortDescriptor);
     const loading = useSelector((state) => state.loading.values);
     const dispatch = useDispatch();
 
@@ -185,30 +186,36 @@ function CustomTable({ onOpen, showToast }) {
     // ======================================== RETURN ========================================
     return (
         <>
-            <div className="mb-4 flex justify-end gap-3">
-                <Button color="primary" endContent={<FontAwesomeIcon icon={faPlus} />} onPress={onOpen}>
-                    Aggiungi
-                </Button>
-            </div>
-
             <Table
                 aria-label="Tabella"
                 isHeaderSticky
                 selectionMode="multiple"
                 selectedKeys={selectedRows}
-                onSelectionChange={setSelectedRows}
                 classNames={{
-                    base: "max-h-[65vh] overflow-scroll",
+                    base: "overflow-auto",
                     table: "min-h-[400px]",
                 }}
+                disableAnimation
                 onCellAction={() => {
                     /* evitare di selezionare la riga cliccando sugli input */
                 }}
+                onSelectionChange={setSelectedRows}
+                sortDescriptor={sortDescriptor}
                 onSortChange={(e) => dispatch(sortRows(e))}
+                topContent={
+                    <div className="flex justify-end gap-3">
+                        <Button color="primary" endContent={<FontAwesomeIcon icon={faPlus} />} onPress={onOpen}>
+                            Aggiungi
+                        </Button>
+                    </div>
+                }
+                topContentPlacement="outside"
                 bottomContent={
-                    <span className="text-small text-default-400 w-[30%]">
-                        {selectedRows === "all" ? `${rows.length} di ${rows.length} selezionati` : `${selectedRows.size} di ${rows.length} selezionati`}
-                    </span>
+                    <div className="flex items-center justify-between">
+                        <span className="text-small text-default-400 whitespace-nowrap">
+                            {selectedRows === "all" ? `${rows.length} di ${rows.length} selezionati` : `${selectedRows.size} di ${rows.length} selezionati`}
+                        </span>
+                    </div>
                 }
                 bottomContentPlacement="outside"
             >
