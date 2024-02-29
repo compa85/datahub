@@ -467,4 +467,49 @@ class Database {
 
         return $result[0];
     }
+
+
+    // ==================================== QUERY PERSONALIZZATA ===================================
+
+    public function execQuery($object) {
+        // array delle query da eseguire
+        $queries = array();
+
+        if (!empty($object->queries)) {
+            // salvo le query in un array
+            $object = $object->queries;
+            foreach ($object as $query) {
+                array_push($queries, $query);
+            }
+
+            // variabile per il conteggio delle query eseguite
+            $executed = 0;
+            // variabile per salvare le risposte dal db
+            $results = array();
+
+            // eseguo tutte le query
+            foreach ($queries as $query) {
+                try {
+                    $result = $this->conn->query($query);
+                    // incremento il numero di query eseguite
+                    $executed++;
+
+                    // salvo le risposte in json 
+                    $query_result = array();
+                    while ($row = mysqli_fetch_assoc($result)) {
+                        $query_result[] = $row;
+                    }
+
+                    // aggiungo i json al vettore risposte
+                    $results[] = $query_result;
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+        } else {
+            return new Response(false, "Property of JSON 'queries' not found");
+        }
+
+        return new Response(true, "$executed queries executed", $queries, $results);
+    }
 }
