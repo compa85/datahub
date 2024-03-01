@@ -43,6 +43,8 @@ Le API che permettono di interagire con il database si trovano all'indirizzo htt
 - delete.php
 - getcolumns.php
 - getlastid.php
+- gettables.php
+- execquery.php
 
 ## Json
 
@@ -52,6 +54,26 @@ La struttura del JSON può variare a seconda della query che si desidera eseguir
 
 Ogni JSON deve contenere una o più tabelle del database, rappresentate come un attributo dell'oggetto principale.
 
+<details>
+<summary>Select</summary>
+
+L'array corrispondente al nome della tabella, contiene gli oggetti che rappresentano i criteri per individuare i record da restituire. Si consiglia di utilizzare le chiavi primarie per identificare i record da restituire.
+
+Se l'array dovesse essere vuoto, tutti i record della tabella verranno restituiti.
+   
+```json
+{
+   "orders": [
+      {
+         "id": "17",
+      }
+   ]
+}
+```
+
+Con questo JSON vengono restituiti i dettagli dell'ordine con id 17.
+
+</details>
 
 <details>
 <summary>Insert</summary>
@@ -131,6 +153,58 @@ Se l'array dovesse essere vuoto, tutti i record della tabella verranno eliminati
 ```
 
 Con questo JSON viene eliminato l'ordine con id 31 e vengono eliminati anche tutti gli ordini effettutati in data 2024-01-01.
+
+</details>
+
+<details>
+<summary>GetColumns</summary>
+
+L'array `tables`, contiene i nomi delle tabelle delle quali verranno restituiti i dettagli delle colonne da cui sono formate.
+   
+```json
+{
+   "tables": [ "orders", "orderdetails" ]
+}
+```
+
+Con questo JSON viene restituito { Field: "orderNumber", Type: "int(11)", Null: "NO", Key: "PRI", Default: "NULL", Extra: "" }, ... .
+
+</details>
+
+<details>
+<summary>GetLastId</summary>
+
+L'array `tables`, contiene i nomi delle tabelle da cui verranno restituiti i valori massimi delle chiavi primarie.
+   
+```json
+{
+   "tables": [ "orders", "offices" ]
+}
+```
+
+Con questo JSON viene restituito "31" e "7".
+
+</details>
+
+<details>
+<summary>GetTables</summary>
+   
+Non ha parametri e restituisce i nomi delle tabelle del database.
+
+</details>
+
+<details>
+<summary>ExecQuery</summary>
+
+L'array `queries`, contiene le query da eseguire.
+   
+```json
+{
+   "queries": [ "SELECT id FROM orders WHERE id = 31", "SELECT officeCode FROM offices WHERE officeCode = 1" ]
+}
+```
+
+Con questo JSON viene restituito "31" e "1".
 
 </details>
 
