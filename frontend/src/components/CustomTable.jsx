@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setPrimaryKeys, deleteAllPrimaryKeys } from "../redux/dbSlice";
 import { addColumns, deleteAllColumns } from "../redux/columnsSlice";
-import { addRows, updateRow, deleteRow, deleteRows, deleteAllRows } from "../redux/rowsSlice";
+import { addRows, updateRow, deleteRows, deleteAllRows, sortRows } from "../redux/rowsSlice";
 import { setHeaderLoading, setBodyLoading } from "../redux/loadingSlice";
 import { dbSelect, dbDelete, dbUpdate, dbGetColumns } from "../database";
 import { Button, Chip, Input, Spinner, Table, TableHeader, TableBody, TableColumn, TableRow, TableCell, Tooltip, getKeyValue } from "@nextui-org/react";
@@ -15,9 +15,10 @@ function CustomTable({ onOpen, showToast }) {
     const host = database.host;
     const table = database.table;
     const primaryKeys = database.primaryKeys;
-    const numericType = database.numericTypes;
+    const numericTypes = database.numericTypes;
     const columns = useSelector((state) => state.columns.values);
     const rows = useSelector((state) => state.rows.values);
+    const sortDescriptor = useSelector((state) => state.rows.sortDescriptor);
     const loading = useSelector((state) => state.loading.values);
     const dispatch = useDispatch();
 
@@ -27,7 +28,7 @@ function CustomTable({ onOpen, showToast }) {
     // righe selezionate
     const [selectedRows, setSelectedRows] = useState(new Set([]));
 
-    // ================================== CARICAMENTO TABELLA =================================
+    // ===================================== CARICAMENTO ======================================
     useEffect(() => {
         // imposto gli stati dei caricamenti a true
         dispatch(setHeaderLoading(true));
@@ -39,29 +40,40 @@ function CustomTable({ onOpen, showToast }) {
         // reimposto updatingRow e selectedRows
         setUpdatingRow(null);
         setSelectedRows(new Set([]));
+        // flag per indicare la presenza di errori
+        let error = false;
 
         // controllo che sia presente un nome della tabella
         if (table !== null && table !== "") {
             // carico le colonne della tabella
-            dbGetColumns({ tables: [table] }).then((response) => {
-                if (response.status === "ok") {
-                    dispatch(addColumns(response.result[0]));
-                } else {
-                    showToast(response);
-                }
-                dispatch(setHeaderLoading(false));
-            });
-
-            // carico le righe della tabella
-            dbSelect({ [table]: [] }).then((response) => {
-                if (response.status === "ok") {
-                    dispatch(addRows(response.result[0]));
-                } else {
-                    showToast(response);
-                }
-                dispatch(setBodyLoading(false));
-            });
+            dbGetColumns({ tables: [table] })
+                .then((response) => {
+                    if (response.status === "ok") {
+                        dispatch(addColumns(response.result[0]));
+                    } else {
+                        showToast(response);
+                        error = true;
+                    }
+                    dispatch(setHeaderLoading(false));
+                })
+                // carico le righe della tabella
+                .then(() => {
+                    // controllo che non ci siano stati errori nel caricamento delle colonne
+                    if (!error) {
+                        dbSelect({ [table]: [] }).then((response) => {
+                            if (response.status === "ok") {
+                                dispatch(addRows(response.result[0]));
+                            } else {
+                                showToast(response);
+                            }
+                            dispatch(setBodyLoading(false));
+                        });
+                    } else {
+                        dispatch(setBodyLoading(false));
+                    }
+                });
         } else {
+            // imposto gli stati dei caricamenti a false
             dispatch(setHeaderLoading(false));
             dispatch(setBodyLoading(false));
         }
@@ -78,6 +90,7 @@ function CustomTable({ onOpen, showToast }) {
                 }
             });
             dispatch(setPrimaryKeys(tmp));
+            dispatch(sortRows({ column: tmp[0] }));
         }
     }, [columns]);
 
@@ -173,40 +186,53 @@ function CustomTable({ onOpen, showToast }) {
     // ======================================== RETURN ========================================
     return (
         <>
-            <div className="mb-4 flex justify-end gap-3">
-                <Button color="primary" endContent={<FontAwesomeIcon icon={faPlus} />} onPress={onOpen}>
-                    Aggiungi
-                </Button>
-            </div>
-
             <Table
                 aria-label="Tabella"
                 isHeaderSticky
                 selectionMode="multiple"
                 selectedKeys={selectedRows}
-                onSelectionChange={setSelectedRows}
                 classNames={{
-                    base: "max-h-[65vh] overflow-scroll",
+                    base: "overflow-auto",
                     table: "min-h-[400px]",
                 }}
+                disableAnimation
                 onCellAction={() => {
                     /* evitare di selezionare la riga cliccando sugli input */
                 }}
+                onSelectionChange={setSelectedRows}
+                sortDescriptor={sortDescriptor}
+                onSortChange={(e) => dispatch(sortRows(e))}
+                topContent={
+                    <div className="flex justify-end gap-3">
+                        <Button color="primary" endContent={<FontAwesomeIcon icon={faPlus} />} onPress={onOpen}>
+                            Aggiungi
+                        </Button>
+                    </div>
+                }
+                topContentPlacement="outside"
+                bottomContent={
+                    <div className="flex items-center justify-between">
+                        <span className="text-small text-default-400 whitespace-nowrap">
+                            {selectedRows === "all" ? `${rows.length} di ${rows.length} selezionati` : `${selectedRows.size} di ${rows.length} selezionati`}
+                        </span>
+                    </div>
+                }
+                bottomContentPlacement="outside"
             >
-                {loading.header === true ? (
+                {loading.header === true || rows.length == 0 ? (
                     <TableHeader>
                         <TableColumn></TableColumn>
                     </TableHeader>
                 ) : (
                     <TableHeader>
                         {columns.map((column) => (
-                            <TableColumn key={column.Field}>
+                            <TableColumn key={column.Field} allowsSorting>
                                 <Tooltip content={column.Type} placement="top">
                                     <Chip className="cursor-pointer bg-transparent">{column.Field}</Chip>
                                 </Tooltip>
                             </TableColumn>
                         ))}
-                        <TableColumn key="Azioni">
+                        <TableColumn key="actions">
                             <Chip className="cursor-pointer bg-transparent">Azioni</Chip>
                         </TableColumn>
                     </TableHeader>
@@ -220,7 +246,7 @@ function CustomTable({ onOpen, showToast }) {
                             <TableRow key={primaryKeys.length > 0 ? row[primaryKeys[0]] : index}>
                                 {(columnKey) => (
                                     <TableCell>
-                                        {columnKey == "Azioni" ? (
+                                        {columnKey == "actions" ? (
                                             <div className="relative flex items-center">
                                                 {updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] ? (
                                                     <>
@@ -245,7 +271,7 @@ function CustomTable({ onOpen, showToast }) {
                                         ) : (
                                             <Input
                                                 name={columnKey}
-                                                type={numericType.some((type) => columns.some((c) => c.Field === columnKey && c.Type.includes(type))) ? "number" : "text"}
+                                                type={numericTypes.some((type) => columns.some((c) => c.Field === columnKey && c.Type.includes(type))) ? "number" : "text"}
                                                 isReadOnly={updatingRow != null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]] && columnKey != primaryKeys[0] ? false : true}
                                                 value={
                                                     updatingRow !== null && updatingRow[primaryKeys[0]] === row[primaryKeys[0]]

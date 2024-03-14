@@ -4,6 +4,10 @@ export const rowsSlice = createSlice({
     name: "rows",
     initialState: {
         values: [],
+        sortDescriptor: {
+            direction: "ascending",
+            column: "",
+        },
     },
     reducers: {
         // aggiungere una riga
@@ -35,7 +39,7 @@ export const rowsSlice = createSlice({
 
                 // trovo l'indice dello stato in cui è salvata la corrispondente riga
                 const index = state.values.findIndex((tmpRow) => tmpRow[fieldName] === fieldValue);
-                
+
                 const newObj = { ...object, [fieldName]: state.values[index][fieldName] };
                 // controllo se esiste un elemento con indice rowIndex
                 if (index !== -1) {
@@ -70,8 +74,55 @@ export const rowsSlice = createSlice({
         deleteAllRows: (state, action) => {
             state.values.length = 0;
         },
+
+        // ordinare le righe secondo un campo della tabella
+        sortRows: (state, action) => {
+            // nome colonna secondo cui ordinare i valori
+            const { column } = action.payload;
+
+            // se la colonna è null vuol dire che è stata aggiunto una riga e il state.sortDescriptor è corretto, in caso contrario lo modifico
+            if (column !== null) {
+                // salvo la direzione di ordinamento (crescente se si ordina una colonna nuova) e la colonna interessata
+                state.sortDescriptor = {
+                    ...state.sortDescriptor,
+                    direction: state.sortDescriptor.column === column ? (state.sortDescriptor.direction === "ascending" ? "descending" : "ascending") : "ascending",
+                    column: column,
+                };
+            }
+
+            // riordino elementi state.values secondo i parametri in state.sortDescriptor
+            // .slice() prende ogni elemento dell'array se non riceve parametri
+            // .sort() prende due elementi alla volta e ordina i due (con bubble sort) in modo crescente
+            state.values = state.values.slice().sort((a, b) => {
+                let first = a[state.sortDescriptor.column] === null || a[state.sortDescriptor.column] === undefined ? a[state.sortDescriptor.column] : parseInt(a[state.sortDescriptor.column]) || a[state.sortDescriptor.column].toLowerCase();
+                let second = b[state.sortDescriptor.column] === null || b[state.sortDescriptor.column] === undefined ? b[state.sortDescriptor.column] : parseInt(b[state.sortDescriptor.column]) || b[state.sortDescriptor.column].toLowerCase();
+
+                // confronto i due valori a e b; cmp = (1 se a > b; -1 se a < b: 0 se a = b)
+                let cmp =
+                    first === null || first === undefined
+                        ? -1
+                        : second === null || second === undefined
+                        ? 1
+                        : typeof first === "number" && typeof second !== "number"
+                        ? -1
+                        : typeof first !== "number" && typeof second === "number"
+                        ? 1
+                        : first > second
+                        ? 1
+                        : first < second
+                        ? -1
+                        : 0;
+
+                // inverto posizione se ordine decrescente
+                if (state.sortDescriptor.direction === "descending") {
+                    cmp *= -1;
+                }
+
+                return cmp;
+            });
+        },
     },
 });
 
-export const { addRow, addRows, updateRow, deleteRow, deleteRows, deleteAllRows } = rowsSlice.actions;
+export const { addRow, addRows, updateRow, deleteRows, deleteAllRows, sortRows } = rowsSlice.actions;
 export const rowsReducer = rowsSlice.reducer;

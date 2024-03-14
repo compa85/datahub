@@ -18,6 +18,20 @@ async function fetchApi(action, object) {
     }
 }
 
+// fetch api senza parametri
+async function fetchApiNO(action) {
+    const host = store.getState().database.host;
+
+    try {
+        let response = await fetch(`http://${host}/api/${action}.php`);
+
+        let json = await response.json();
+        return json;
+    } catch (error) {
+        return { status: "error", message: "Failed to fetch", query: null, result: null };
+    }
+}
+
 // select
 async function dbSelect(object) {
     return await fetchApi("select", object);
@@ -48,4 +62,9 @@ async function dbGetLastId(object) {
     return await fetchApi("getlastid", object);
 }
 
-export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns, dbGetLastId };
+// get Tables
+async function dbGetTables() {
+    return await fetchApiNO("gettables");
+}
+
+export { dbSelect, dbInsert, dbUpdate, dbDelete, dbGetColumns, dbGetLastId, dbGetTables };

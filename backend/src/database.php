@@ -428,4 +428,88 @@ class Database {
             return new Response(false, "JSON does not contain array 'tables'");
         }
     }
+
+
+    // ================================= SELEZIONE NOME TABELLE DB =================================
+
+    public function getTables() {
+        // salvo nome DB
+        $database_name = $this->getDBName();
+
+        // query per ottenere il nome delle tabelle del DB
+        $query = "SHOW TABLES";
+
+        // array per i nomi delle tabelle
+        $results = array();
+
+        // salvo in result il risultato della query come vettore associativo
+        $result = $this->conn->query($query);
+        $result = $result->fetch_all(MYSQLI_NUM);
+
+        foreach ($result as $index => $value) {
+            // salvo in results i nomi delle tabelle
+            array_push($results, $value[0]);
+        }
+
+        return new Response(true, "Got tables name from the DB $database_name", $query, $results);
+    }
+
+
+    // ===================================== SELEZIONE NOME DB =====================================
+
+    private function getDBName() {
+        // query per ottenere il nome del DB
+        $query = "SELECT DATABASE()";
+
+        // salvo in result il risultato della query
+        $result = $this->conn->query($query);
+        $result = $result->fetch_row();
+
+        return $result[0];
+    }
+
+
+    // ==================================== QUERY PERSONALIZZATA ===================================
+
+    public function execQuery($object) {
+        // array delle query da eseguire
+        $queries = array();
+
+        if (!empty($object->queries)) {
+            // salvo le query in un array
+            $object = $object->queries;
+            foreach ($object as $query) {
+                array_push($queries, $query);
+            }
+
+            // variabile per il conteggio delle query eseguite
+            $executed = 0;
+            // variabile per salvare le risposte dal db
+            $results = array();
+
+            // eseguo tutte le query
+            foreach ($queries as $query) {
+                try {
+                    $result = $this->conn->query($query);
+                    // incremento il numero di query eseguite
+                    $executed++;
+
+                    // salvo le risposte in json 
+                    $query_result = array();
+                    while ($row = mysqli_fetch_assoc($result)) {
+                        $query_result[] = $row;
+                    }
+
+                    // aggiungo i json al vettore risposte
+                    $results[] = $query_result;
+                } catch (Exception $e) {
+                    return new Response(false, $e->getMessage());
+                }
+            }
+        } else {
+            return new Response(false, "Property of JSON 'queries' not found");
+        }
+
+        return new Response(true, "$executed queries executed", $queries, $results);
+    }
 }

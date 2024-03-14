@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addRow } from "../redux/rowsSlice";
+import { addRow, sortRows } from "../redux/rowsSlice";
 import { addField, resetFields, deleteAllFields } from "../redux/formSlice";
 import { dbInsert, dbGetLastId } from "../database";
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Spinner } from "@nextui-org/react";
@@ -53,7 +53,7 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
         };
 
         for (const field in form) {
-            if (form[field] !== "" && form[field]!==primaryKeys[0]) {
+            if (form[field] !== "" && form[field] !== primaryKeys[0]) {
                 object[table][0][field] = form[field];
             }
         }
@@ -62,7 +62,7 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
         dbInsert(object).then((response) => {
             if (response.status === "ok") {
                 // ottengo l'ultimo id
-                const lastId = response.result[0];
+                const lastId = String(response.result[0]);
 
                 // aggiungo l'id come attributo dell'oggetto da inserire nella tabella
                 object = {
@@ -74,6 +74,8 @@ function CustomFormModal({ isOpen, onOpenChange, showToast }) {
                 dispatch(addRow(object));
                 // resetto gli input
                 dispatch(resetFields(primaryKeys));
+                // riordino le righe della tabella con il criterio esistente
+                dispatch(sortRows({ column: null }));
             }
             showToast(response);
         });
