@@ -5,7 +5,7 @@ async function fetchApi(action, object) {
     const host = store.getState().database.host;
 
     try {
-        let response = await fetch(`http://${host}/api/${action}.php`, {
+        let response = await fetch(`${host}/api/${action}.php`, {
             method: "POST",
             "Content-Type": "application/json",
             body: JSON.stringify(object),
@@ -14,6 +14,7 @@ async function fetchApi(action, object) {
         let json = await response.json();
         return json;
     } catch (error) {
+        console.error(error);
         return { status: "error", message: "Failed to fetch", query: null, result: null };
     }
 }
@@ -23,11 +24,12 @@ async function fetchApiNO(action) {
     const host = store.getState().database.host;
 
     try {
-        let response = await fetch(`http://${host}/api/${action}.php`);
+        let response = await fetch(`${host}/api/${action}.php`);
 
         let json = await response.json();
         return json;
     } catch (error) {
+        console.error(error);
         return { status: "error", message: "Failed to fetch", query: null, result: null };
     }
 }
